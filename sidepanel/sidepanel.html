@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sunflower Tools</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="brand">
+          <img class="brand-icon" alt="Sunflower Tools" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABelBMVEVjx02XgDx5qEZev1Vcu1ppr1KKkUHalT2skz9/oURXs2FfoGKLiEzQcCvOVyz/+U7PZCu/iDfXgyn9zyD4hCL+7Uj6sTL7qiDvuSO6azFrskxxvVGPdEj/3h/8wCD9yCC+Si+Dc0abNECTSUKa7omB62uejkL5jin+1iBzPjnAfCv3diKLXkTOWWH2dXrjrkH540n91z2GTjaxXDTuVVyhakDqwjGugDXWTFS9PUfixMhQZ1lXp0toOTu1i5S+V2HTp63///+9vMBihWrCmj+dVjHNiC4mK0TR1NvGi5KbmqGbbTiSQjVbYHXt8PSDhpRBbkjg5e36oiGoRjJaV2M5NkRRrGlwkFlBRlyQlaQ4WEdHikZQgEXHYzRjnkfk0aHu045ZtUxSVz1gc0FLkkcxcEX9zn/8u0s7g0gmXEItaUQxT052e4zwmmnyc0Njf3A4fEfxvcHzlppstm906FvChWmchmCLqlphW0FiRTxpZmxSRkE1VEVFTkLN7pTfAAACHklEQVR4AbxNswEDAQDM27Zte//JYqPNdefdHwEAALj7AQhGUBTDMBwlvvskRTMsx3EYL3wdOfqiJCucomq6YR4FyzTNl4AtOo6jOa7nOJJ/FIIwjJ78OEnZLNeKoihdtzoG6qZt2/DJB7p+UMdjYCzdvp+ikz/P0e0lIZeOU9bihK3nOD88lEkXiq3CYBSAuS5zd3d3r6UTZCOjLqHr6HCZu7z7QtL5qcL5sB9WF3HW1jcCZfHTB60UzNXUBEPhtbW1qQiIbr6I31szra1tuN/e6W6dYbkIz/MRAIDwKr7Vtox2L+0u7fT0jOyJELxkXyqDyp2Grobmpu7u0dFlFgAIAYx9AD8rqxom8CSb460JDJICiKbeg//pdKa31x91714WgBgB/i5gLv8CkCwXCoXfBxIGoHh4WPT7V/AjEFAUpXRUklUtCwHQDUMnfawMGNUMBBjLtG3NclwIi96xB/1eOFEpQBpCAc20TxEypRwHz87PIHzXM+qpH9MmyywH6P5j+6+DGrywbcsyJR8o2RggiWEhKXjNJb6fP9IdV5Z5fYN7lvYEkJPE4PJnBULpq6urG0ZlCaC9mItFHTwF8tSm0x0dHQy6rWNjRHDZmMhmsxsKLuksyI98N1IncjEIo/d14srDoxxgPkYtzY+wLo6YGtkeubNU5RMInOZXHkny2xMLJQ2pn4CionJMZ/wJ9wHmiyCERqX957wBegLPF8afAf2inikAAAAASUVORK5CYII=" />
+          <div class="brand-meta">
+            <h1>Sunflower Tools</h1>
+            <p class="code-release" id="code-release">Mã cập nhật: đang tải…</p>
+          </div>
+          <div class="header-actions">
+            <p class="connection is-disconnected" id="connection-status"><span></span> Chưa kết nối Sunflower Land</p>
+            <button class="reload-extension-button" id="reload-extension" type="button" title="Reload extension" aria-label="Reload extension">↻</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="extension-content" id="extension-content" aria-label="Extension content">
+        <section class="connection-empty-state" id="disconnected-content">
+          <div><span class="connection-empty-icon" aria-hidden="true">🌻</span><h2>Kết nối Sunflower Land</h2><p>Mở game rồi kết nối để dùng các công cụ.</p><button class="connect-button" id="connect-button" type="button">Kết nối</button></div>
+        </section>
+        <div id="connected-content" hidden>
+        <nav class="tool-tabs" role="tablist" aria-label="Nội dung panel">
+          <button class="tool-tab is-active" type="button" role="tab" aria-selected="true" data-tool-tab="map">Map</button>
+          <button class="tool-tab" type="button" role="tab" aria-selected="false" data-tool-tab="log">Nhật ký</button>
+          <button class="tool-tab" type="button" role="tab" aria-selected="false" data-tool-tab="settings">Cài đặt</button>
+        </nav>
+        <section class="tool-tab-panel" id="map-panel" data-tool-panel="map">
+          <div class="map-sticky-controls">
+            <div class="map-summary">
+              <div class="land-info" id="land-info" aria-live="polite">Đang đọc thông tin land…</div>
+            </div>
+            <div class="map-scan-card"><div class="test-actions"><button class="scan-map-button" id="scan-map" type="button" title="Quét Map" aria-label="Quét Map"><span class="scan-icon" aria-hidden="true">⟳</span><span>Map</span></button><button class="scan-map-button" id="scan-fertilisers" type="button" title="Quét túi đồ" aria-label="Quét túi đồ"><span class="scan-icon" aria-hidden="true">⟳</span><span>Túi</span></button><button class="scan-map-button" id="scan-betty" type="button" title="Quét Betty" aria-label="Quét Betty"><span class="scan-icon" aria-hidden="true">⟳</span><span>Betty</span></button><button class="scan-map-button" id="scan-tools" type="button" title="Quét Tools" aria-label="Quét Tools"><span class="scan-icon" aria-hidden="true">⟳</span><span>Tools</span></button></div></div>
+          </div>
+          <section class="map-tools">
+            <nav class="map-activity-tabs" role="tablist" aria-label="Nghề trên Map"><button class="map-activity-tab is-active" type="button" role="tab" aria-selected="true" data-map-activity-tab="overview">Tổng quan</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="crop">Crop</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="fruit">Fruit</button></nav>
+            <div class="map-activity-content" id="map-activity-content">
+              <div class="activity-results" id="ready-results"><div class="tree-results" id="overview-results"><div class="empty-state" data-activity="overview">Chưa quét map.</div></div><div class="crop-results" id="crop-results"><div class="empty-state">Chưa quét map.</div></div><div class="tree-results" id="tree-results"></div><div class="tree-results" id="mining-results"></div></div>
+              <div class="activity-results activity-results-growing" id="growing-results"><div class="crop-results" id="crop-growing-results"></div><div class="tree-results" id="tree-growing-results"></div><div class="tree-results" id="mining-growing-results"></div></div>
+              <div class="shop-results map-betty-results" id="shop-results"></div>
+              <div class="activity-results activity-results-blocked" id="blocked-results"></div>
+            </div>
+          </section>
+        </section>
+        <section class="tool-tab-panel panel-log-section" data-tool-panel="log" hidden>
+          <h2>Nhật ký</h2>
+          <div class="panel-log" id="panel-log"></div>
+        </section>
+        <section class="tool-tab-panel settings-panel" data-tool-panel="settings" hidden>
+          <h2>Cài đặt</h2>
+          <label class="settings-toggle"><span><b>Thông báo sẵn sàng</b><small>Báo khi tiến trình đếm ngược hoàn tất. Bật lên để nhận thông báo thử.</small><small id="notification-status" class="notification-status"></small></span><input id="ready-notifications" type="checkbox" role="switch" /><i aria-hidden="true"></i></label>
+        </section>
+        </div>
+      </main>
+      <footer class="app-footer"><span id="site-label">Mở sunflower-land.com để kết nối</span></footer>
+    </div>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

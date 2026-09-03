@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Sunflower Tools",
+  "version": "1.0.0",
+  "description": "A native split-screen side panel for Sunflower Land.",
+  "permissions": ["sidePanel", "tabs", "windows", "scripting", "storage", "alarms", "notifications"],
+  "host_permissions": ["https://sunflower-land.com/*"],
+  "action": {
+    "default_title": "Open Sunflower Tools",
+    "default_icon": "assets/sunflower-tools-icon.png"
+  },
+  "icons": {
+    "16": "assets/sunflower-tools-icon.png",
+    "32": "assets/sunflower-tools-icon.png",
+    "48": "assets/sunflower-tools-icon.png",
+    "128": "assets/sunflower-tools-icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  }
+}
