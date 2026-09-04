@@ -359,7 +359,7 @@ mapActivityContent.addEventListener('click', async (event) => {
         const fruitSeed = selectedFruitSeed || lastScanData?.heldFruitSeed;
         if (fruitSeed) setSeedCount(fruitSeed, Math.max(0, getSeedCount(fruitSeed) - result.processed));
       }
-      applyFruitStates(await readFruitStates(result.processedKeys || []));
+      applyFruitStates(await readFruitStates(result.processedKeys || []), { newlyPlanted: action === 'plant-fruit' });
       renderOverview();
       startCountdowns();
     }

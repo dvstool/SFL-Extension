@@ -17,7 +17,6 @@ function renderActivityCards(container, title, activity, label, cards) {
 }
 
 function renderCropScan(data) {
-  countdownTargets.clear();
   lastScanData = data;
   const now = Date.now();
   const runningCards = Array.from(cropResults.querySelectorAll('.crop-card[data-countdown-target]'));

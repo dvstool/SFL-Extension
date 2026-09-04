@@ -109,7 +109,7 @@ function applyComposterStates(states = []) {
   lastScanData.composters = { ready: Array.from(groups.ready.values()), empty: Array.from(groups.empty.values()), growing: Array.from(groups.growing.values()) };
 }
 
-function applyFruitStates(states = []) {
+function applyFruitStates(states = [], options = {}) {
   if (!lastScanData?.fruit || !states.length) return;
   const changed = new Set(states.map((state) => state.mapKey));
   const originalByKey = new Map();
@@ -124,7 +124,19 @@ function applyFruitStates(states = []) {
     const original = originalByKey.get(state.mapKey) || {};
     const target = lastScanData.fruit[state.state] || (lastScanData.fruit[state.state] = []);
     const label = state.state === 'empty' ? 'Đất Fruit trống' : state.state === 'dead' ? 'Gốc Fruit chết' : state.label || original.label || 'Fruit';
-    const candidate = { ...original, label, icon: state.icon || original.icon, count: 1, mapKeys: [state.mapKey], seconds: state.state === 'growing' ? state.seconds : null, countdownTarget: null };
+    const newlyPlanted = Boolean(options.newlyPlanted && state.state === 'growing');
+    const candidate = {
+      ...original,
+      label,
+      icon: state.icon || original.icon,
+      count: 1,
+      mapKeys: [state.mapKey],
+      seconds: state.state === 'growing' ? state.seconds : null,
+      countdownTarget: null,
+      // Empty Fruit soil may have been fertilised, but a Fruit just planted
+      // on it must not inherit that UI state.
+      ...(newlyPlanted ? { fertilised: false, fertiliserType: 0 } : {})
+    };
     const group = target.find((item) => item.label === candidate.label && Number(item.fertiliserType || 0) === Number(candidate.fertiliserType || 0) && Number(item.seconds) === Number(candidate.seconds));
     if (group) { group.count += 1; group.mapKeys.push(state.mapKey); } else target.push(candidate);
   });

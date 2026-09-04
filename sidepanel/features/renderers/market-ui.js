@@ -33,7 +33,8 @@ function renderSeedPicker() {
   seedPickerResults.innerHTML = seeds.map((item) => {
     const name = String(item.name || '').replace(/\s+seed$/i, '');
     const growth = item.growthTime || 'Chưa rõ';
-    return `<article class="seed-picker-card" data-seed-picker-choice="true" data-seed-kind="${kind}" data-shop-seed-name="${escapeHtml(item.name)}" data-shop-slot-index="${escapeHtml(item.slotIndex)}"><img class="seed-picker-icon" src="${escapeHtml(item.icon)}" alt="" /><div class="seed-picker-content"><strong>${escapeHtml(name)}</strong><span>Đang có: ×${escapeHtml(getSeedCount(item))}</span><span class="seed-growth"><img src="https://sunflower-land.com/game-assets/icons/lightning.png" alt="Thời gian lớn" />${escapeHtml(growth)}</span></div><span class="seed-picker-overlay">Chọn</span></article>`;
+    const growthIcon = item.growthIcon || 'https://sunflower-land.com/game-assets/icons/lightning.png';
+    return `<article class="seed-picker-card" data-seed-picker-choice="true" data-seed-kind="${kind}" data-shop-seed-name="${escapeHtml(item.name)}" data-shop-slot-index="${escapeHtml(item.slotIndex)}"><img class="seed-picker-icon" src="${escapeHtml(item.icon)}" alt="" /><div class="seed-picker-content"><strong>${escapeHtml(name)}</strong><span>Đang có: ×${escapeHtml(getSeedCount(item))}</span><span class="seed-growth"><img src="${escapeHtml(growthIcon)}" alt="Thời gian lớn" />${escapeHtml(growth)}</span></div><span class="seed-picker-overlay">Chọn</span></article>`;
   }).join('');
 }
 
@@ -83,7 +84,8 @@ function renderBettyShop(scan) {
     const reason = visibleRequirements.length ? `<p class="shop-requirements">${escapeHtml(visibleRequirements.join('\n').replace(/You have too many seeds in your basket!/gi, 'Túi đã đầy'))}</p>` : item.stock === 0 ? '<p class="shop-requirements">Sold out</p>' : '';
     const state = locked ? 'is-unavailable is-level-locked' : basketFull ? 'is-unavailable is-basket-full' : item.stock === 0 ? 'is-unavailable is-sold-out' : '';
     const growth = item.growthTime || 'Chưa rõ';
-    return `<article class="shop-card ${state} is-seed-choice" data-shop-category="${category}" data-shop-seed-name="${escapeHtml(name)}" data-shop-slot-index="${escapeHtml(item.slotIndex)}">${tier ? `<b class="shop-tier">${tier}</b>` : ''}<div class="shop-icon-box"><img class="shop-item-icon" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${escapeHtml(getSeedCount(item))}</b></div><div class="shop-card-content"><strong>${escapeHtml(name.replace(/\s+seed$/i, ''))}</strong><div class="shop-card-meta"><span>${escapeHtml(`${item.stock} in stock`)}</span><span class="seed-growth"><img src="https://sunflower-land.com/game-assets/icons/lightning.png" alt="Thời gian lớn" />${escapeHtml(growth)}</span></div>${reason}</div>${actions}<span class="shop-select-overlay">Chọn</span></article>`;
+    const growthIcon = item.growthIcon || 'https://sunflower-land.com/game-assets/icons/lightning.png';
+    return `<article class="shop-card ${state} is-seed-choice" data-shop-category="${category}" data-shop-seed-name="${escapeHtml(name)}" data-shop-slot-index="${escapeHtml(item.slotIndex)}">${tier ? `<b class="shop-tier">${tier}</b>` : ''}<div class="shop-icon-box"><img class="shop-item-icon" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${escapeHtml(getSeedCount(item))}</b></div><div class="shop-card-content"><strong>${escapeHtml(name.replace(/\s+seed$/i, ''))}</strong><div class="shop-card-meta"><span>${escapeHtml(`${item.stock} in stock`)}</span><span class="seed-growth"><img src="${escapeHtml(growthIcon)}" alt="Thời gian lớn" />${escapeHtml(growth)}</span></div>${reason}</div>${actions}<span class="shop-select-overlay">Chọn</span></article>`;
   }).join('');
   groupBettyCards(shopResults);
   renderSeedPicker();

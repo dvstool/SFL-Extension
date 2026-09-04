@@ -108,6 +108,9 @@ async function selectGameCatalogItem(activity, slotIndex, category = '') {
         const seasonSeeds = await waitFor(() => document.querySelector('#SeasonSeeds'));
         const slot = Array.from(seasonSeeds?.querySelectorAll('.bg-brown-600') || []).filter((item) => item.querySelector('img[alt="item"]'))[requestedSlotIndex];
         slot?.click();
+        // The game detail pane updates on the next frame; callers read it
+        // immediately afterwards to refresh only the card the player clicked.
+        if (slot) await sleep(60);
         return Boolean(slot);
       }
       const workbenchDialog = dialog();
@@ -116,6 +119,7 @@ async function selectGameCatalogItem(activity, slotIndex, category = '') {
       const heading = Array.from(workbenchDialog?.querySelectorAll('div') || []).find((item) => item.textContent.trim() === requestedCategory);
       const slot = Array.from(heading?.nextElementSibling?.querySelectorAll('.bg-brown-600, .bg-brown-700') || []).filter((item) => item.querySelector('img[alt="item"]'))[requestedSlotIndex];
       slot?.click();
+      if (slot) await sleep(60);
       return Boolean(slot);
     },
     args: [activity, slotIndex, category]
@@ -125,14 +129,24 @@ async function selectGameCatalogItem(activity, slotIndex, category = '') {
 
 async function markGameAction(activity, slotIndex, category, actionLabel) {
   try {
-    const selected = await selectGameCatalogItem(activity, slotIndex, category);
-    if (!selected) return;
-    await new Promise((resolve) => setTimeout(resolve, 55));
     await executeOnSunflowerTabs({
-      func: (requestedActivity, requestedAction) => {
+      func: (requestedActivity, requestedSlotIndex, requestedCategory, requestedAction) => {
         const markerId = 'sunflower-tools-game-action-marker';
         document.getElementById(markerId)?.remove();
         const dialog = Array.from(document.querySelectorAll('div.relative.max-h-\\[90vh\\]')).find((item) => item.querySelector('#SeasonSeeds') || /\b(?:Land|Water|Animal) Tools\b/i.test(item.innerText || ''));
+        const selectedSlotIndex = (() => {
+          if (requestedActivity === 'market') {
+            const slots = Array.from(document.querySelector('#SeasonSeeds')?.querySelectorAll('.bg-brown-600') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
+            return slots.findIndex((slot) => slot.parentElement?.querySelector('img[src*="/game-assets/ui/select/selectbox_"]'));
+          }
+          const heading = Array.from(dialog?.querySelectorAll('div') || []).find((item) => item.textContent.trim() === requestedCategory);
+          const slots = Array.from(heading?.nextElementSibling?.querySelectorAll('.bg-brown-600, .bg-brown-700') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
+          return slots.findIndex((slot) => slot.parentElement?.querySelector('img[src*="/game-assets/ui/select/selectbox_"]'));
+        })();
+        // Hovering a Buy/Craft button must never point to a similarly-labelled
+        // action from another item.  Show a dot only for the item selected by
+        // an explicit card click.
+        if (selectedSlotIndex !== requestedSlotIndex) return false;
         const button = Array.from(dialog?.querySelectorAll('button') || []).find((item) => item.innerText.trim() === requestedAction || (requestedActivity === 'market' && item.innerText.trim().toLowerCase() === requestedAction.toLowerCase()));
         if (!button) return false;
         const rect = button.getBoundingClientRect();
@@ -143,7 +157,7 @@ async function markGameAction(activity, slotIndex, category, actionLabel) {
         document.body.append(marker);
         return true;
       },
-      args: [activity, actionLabel]
+      args: [activity, slotIndex, category, actionLabel]
     });
   } catch { /* Preview marker is optional. */ }
 }
@@ -159,19 +173,18 @@ function enteredElement(event, selector) {
   return element && !element.contains(event.relatedTarget) ? element : null;
 }
 
-const toolHoverRefreshes = new Set();
-const toolHoverRefreshAt = new Map();
+const toolSelectionRefreshes = new Set();
 
-function refreshWorkbenchToolOnHover(category, slotIndex) {
+async function refreshWorkbenchToolOnSelection(category, slotIndex) {
   if (!category || !Number.isInteger(slotIndex) || typeof refreshPurchasedTool !== 'function') return;
-  const isWorkbenchActive = mapActivityTabs.some((tab) => tab.dataset.mapActivityTab === 'workbench' && tab.classList.contains('is-active'));
-  if (!isWorkbenchActive) return;
   const key = `${category}|${slotIndex}`;
-  const now = Date.now();
-  if (toolHoverRefreshes.has(key) || now - (toolHoverRefreshAt.get(key) || 0) < 750) return;
-  toolHoverRefreshes.add(key);
-  toolHoverRefreshAt.set(key, now);
-  void refreshPurchasedTool(category, slotIndex).catch(() => {}).finally(() => toolHoverRefreshes.delete(key));
+  if (toolSelectionRefreshes.has(key)) return;
+  toolSelectionRefreshes.add(key);
+  try {
+    await refreshPurchasedTool(category, slotIndex);
+  } catch { /* Selection refresh is best-effort. */ } finally {
+    toolSelectionRefreshes.delete(key);
+  }
 }
 
 shopResults.addEventListener('pointerover', (event) => {
@@ -181,8 +194,6 @@ shopResults.addEventListener('pointerover', (event) => {
     void markGameAction('market', Number(card?.dataset.shopSlotIndex), '', buyButton.dataset.shopBuy || '');
     return;
   }
-  const card = enteredElement(event, '.shop-card[data-shop-slot-index]');
-  if (card) void selectGameCatalogItem('market', Number(card.dataset.shopSlotIndex));
 });
 shopResults.addEventListener('pointerout', (event) => {
   if (enteredElement({ target: event.target, relatedTarget: event.relatedTarget }, '[data-shop-buy]')) clearGameActionMarker();
@@ -193,13 +204,31 @@ workbenchResults.addEventListener('pointerover', (event) => {
   const card = event.target.closest('.shop-card[data-tool-slot-index]');
   if (craftButton && card) {
     void markGameAction('workbench', Number(card.dataset.toolSlotIndex), card.dataset.toolCategory || '', craftButton.dataset.toolCraft || '');
-    window.setTimeout(() => refreshWorkbenchToolOnHover(card.dataset.toolCategory || '', Number(card.dataset.toolSlotIndex)), 160);
-    return;
   }
-  if (card && !card.contains(event.relatedTarget)) refreshWorkbenchToolOnHover(card.dataset.toolCategory || '', Number(card.dataset.toolSlotIndex));
 });
 workbenchResults.addEventListener('pointerout', (event) => {
   if (enteredElement({ target: event.target, relatedTarget: event.relatedTarget }, '[data-tool-craft]')) clearGameActionMarker();
+});
+
+shopResults.addEventListener('click', async (event) => {
+  if (event.target.closest('[data-shop-buy]') || plantSeedPicking || fruitSeedPicking) return;
+  const card = event.target.closest('.shop-card[data-shop-slot-index]');
+  const slotIndex = Number(card?.dataset.shopSlotIndex);
+  if (!card || !Number.isInteger(slotIndex)) return;
+  const selected = await selectGameCatalogItem('market', slotIndex);
+  if (selected && typeof refreshSelectedBettyItem === 'function') {
+    await refreshSelectedBettyItem(slotIndex, card.dataset.shopSeedName || '');
+  }
+});
+
+workbenchResults.addEventListener('click', async (event) => {
+  if (event.target.closest('[data-tool-craft]')) return;
+  const card = event.target.closest('.shop-card[data-tool-slot-index]');
+  const slotIndex = Number(card?.dataset.toolSlotIndex);
+  const category = card?.dataset.toolCategory || '';
+  if (!card || !category || !Number.isInteger(slotIndex)) return;
+  const selected = await selectGameCatalogItem('workbench', slotIndex, category);
+  if (selected) await refreshWorkbenchToolOnSelection(category, slotIndex);
 });
 
 seedPickerResults?.addEventListener('pointerover', (event) => {

@@ -521,8 +521,11 @@ mapActivityContent.addEventListener('click', async (event) => {
               label: titleCase(match[1]),
               icon: image.currentSrc || image.src,
               count: 1,
-              fertilised: targetInfo.fertiliserType > 0,
-              fertiliserType: targetInfo.fertiliserType,
+              // Fertiliser state belongs to the empty soil card selected for
+              // planting. A newly planted crop must start unfertilised; only
+              // an explicit fertilise action can move it to that card.
+              fertilised: false,
+              fertiliserType: 0,
               bee: false,
               stage: match[2],
               seconds: time.seconds,

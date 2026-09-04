@@ -52,7 +52,14 @@ scanBettyButton.addEventListener('click', async () => {
           const stockMatch = details.innerText.match(/([\d,.]+)\s+in stock/i);
           const stock = details.innerText.includes('Sold out') ? 0 : Number((stockMatch?.[1] || '0').replace(/,/g, ''));
           const metricRows = Array.from(details.querySelectorAll('div.flex.justify-between.min-h-\\[26px\\]'));
-          const growthTime = metricRows.find((row) => Array.from(row.querySelectorAll('img')).some((image) => /\/game-assets\/icons\/lightning\.png/i.test(image.currentSrc || image.src || '')))?.innerText.trim() || '';
+          const hasMetricIcon = (row, icon) => Array.from(row.querySelectorAll('img')).some((image) => icon.test(image.currentSrc || image.src || ''));
+          // Some market items show their grow time with a stopwatch rather
+          // than lightning (for example "4hrs").  Prefer lightning when it
+          // exists, then use that stopwatch row as the exact fallback.
+          const growthRow = metricRows.find((row) => hasMetricIcon(row, /\/game-assets\/icons\/lightning\.png/i))
+            || metricRows.find((row) => hasMetricIcon(row, /\/game-assets\/icons\/stopwatch\.png/i));
+          const growthTime = growthRow?.innerText.trim() || '';
+          const growthIcon = Array.from(growthRow?.querySelectorAll('img') || []).find((image) => /\/game-assets\/icons\/(?:lightning|stopwatch)\.png/i.test(image.currentSrc || image.src || ''));
           const price = metricRows.at(-1)?.innerText.trim() || '';
           const basketMessage = paragraphs.find((text) => /you have too many seeds in your basket/i.test(text));
           const requirements = [
@@ -61,7 +68,7 @@ scanBettyButton.addEventListener('click', async () => {
           ].filter((text) => text && !/^Sold out$/i.test(text) && !/^\d[\d,.]*\s+in stock$/i.test(text));
           const buyOptions = Array.from(details.querySelectorAll('button')).map((button) => button.innerText.trim()).filter((text) => /^Buy\s+(?:\d+|All)$/i.test(text));
           const fruitName = name.replace(/\s+(?:Seed|Plant)$/i, '');
-          return name && icon ? { name: /\bSeed$/i.test(name) ? name : `${fruitName} Seed`, category: category || (/^(Apple|Banana|Blueberry|Lemon|Orange|Grape)(?:\s+(?:Seed|Plant))?$/i.test(name) ? 'Fruit' : ''), icon: icon.currentSrc || icon.src, stock: Number.isFinite(stock) ? stock : 0, growthTime, price, requirements: [...new Set(requirements)], buyOptions } : null;
+          return name && icon ? { name: /\bSeed$/i.test(name) ? name : `${fruitName} Seed`, category: category || (/^(Apple|Banana|Blueberry|Lemon|Orange|Grape)(?:\s+(?:Seed|Plant))?$/i.test(name) ? 'Fruit' : ''), icon: icon.currentSrc || icon.src, stock: Number.isFinite(stock) ? stock : 0, growthTime, growthIcon: growthIcon?.currentSrc || growthIcon?.src || '', price, requirements: [...new Set(requirements)], buyOptions } : null;
         };
         const selectedSlot = slots.find((slot) => slot.parentElement?.querySelector('img[src*="/game-assets/ui/select/selectbox_"]'));
         const orderedSlots = slots.map((slot, slotIndex) => ({ slot, slotIndex })).sort((left, right) => Number(right.slot === selectedSlot) - Number(left.slot === selectedSlot));
@@ -275,6 +282,51 @@ async function refreshPurchasedTool(category, slotIndex) {
   toolCounts.set(item.icon, item.count);
   renderWorkbench();
   renderOverview();
+  return true;
+}
+
+// Refresh one Betty card after the player explicitly selects it.  This is much
+// lighter than a full shop scan, while still using the current in-game detail
+// panel as the source of truth for stock and the player's seed count.
+async function refreshSelectedBettyItem(slotIndex, expectedName = '') {
+  if (!Number.isInteger(slotIndex)) return false;
+  const [{ result }] = await executeOnSunflowerTabs({
+    func: (requestedSlotIndex) => {
+      const normalise = (value) => String(value || '').trim().replace(/[_-]/g, ' ').replace(/\s+/g, ' ').toLowerCase();
+      const seasonSeeds = document.querySelector('#SeasonSeeds');
+      const dialog = seasonSeeds?.closest('div.relative.max-h-\\[90vh\\]') || seasonSeeds?.parentElement?.parentElement?.parentElement;
+      const slots = Array.from(seasonSeeds?.querySelectorAll('.bg-brown-600') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
+      const slot = slots[requestedSlotIndex];
+      if (!dialog || !slot) return { error: 'Không tìm thấy hạt đã chọn trong Betty’s Market.' };
+      const details = Array.from(dialog.querySelectorAll('div.flex.flex-col.h-full.justify-between')).find((element) => {
+        const title = Array.from(element.querySelectorAll('p')).some((paragraph) => /\bSeed$/i.test(paragraph.textContent.trim()) || /^(Apple|Banana|Blueberry|Lemon|Orange|Grape)(?:\s+(?:Seed|Plant))?$/i.test(paragraph.textContent.trim()));
+        return title && (element.innerText.includes('in stock') || element.innerText.includes('Sold out') || Array.from(element.querySelectorAll('button')).some((button) => /^Buy\s+\d+$/i.test(button.innerText.trim())));
+      });
+      if (!details) return { error: 'Không đọc được thông tin hạt đã chọn.' };
+      const paragraphs = Array.from(details.querySelectorAll('p')).map((paragraph) => paragraph.textContent.trim()).filter(Boolean);
+      const rawName = paragraphs.find((text) => /\bSeed$/i.test(text)) || paragraphs.find((text) => /^(Apple|Banana|Blueberry|Lemon|Orange|Grape)(?:\s+(?:Seed|Plant))?$/i.test(text)) || '';
+      const name = /\bSeed$/i.test(rawName) ? rawName : rawName ? `${rawName.replace(/\s+(?:Seed|Plant)$/i, '')} Seed` : '';
+      const stockMatch = details.innerText.match(/([\d,.]+)\s+in stock/i);
+      const stock = details.innerText.includes('Sold out') ? 0 : Number((stockMatch?.[1] || '0').replace(/,/g, ''));
+      const ownedText = (slot.parentElement?.innerText || slot.parentElement?.textContent || slot.textContent || '').replace(/,/g, '').toLowerCase();
+      const ownedMatch = ownedText.match(/\d+(?:\.\d+)?\s*k?/);
+      const ownedNumber = Number.parseFloat(ownedMatch?.[0] || '0');
+      const owned = Number.isFinite(ownedNumber) ? Math.round(ownedNumber * (String(ownedMatch?.[0] || '').includes('k') ? 1000 : 1)) : 0;
+      const buyOptions = Array.from(details.querySelectorAll('button')).map((button) => button.innerText.trim()).filter((text) => /^Buy\s+(?:\d+|All)$/i.test(text));
+      return { name, normalisedName: normalise(name), stock: Number.isFinite(stock) ? stock : 0, owned, buyOptions };
+    },
+    args: [slotIndex]
+  });
+  if (result?.error || !result?.name) return false;
+  const normalise = (value) => String(value || '').trim().replace(/[_-]/g, ' ').replace(/\s+/g, ' ').toLowerCase();
+  if (expectedName && result.normalisedName !== normalise(expectedName)) return false;
+  const item = lastBettyScan?.items.find((entry) => Number(entry.slotIndex) === slotIndex && (!expectedName || normalise(entry.name) === normalise(expectedName)));
+  if (!item) return false;
+  item.stock = result.stock;
+  item.owned = result.owned;
+  item.buyOptions = result.buyOptions;
+  setSeedCount(item, result.owned);
+  renderBettyShop(lastBettyScan);
   return true;
 }
 

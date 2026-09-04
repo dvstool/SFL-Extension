@@ -125,7 +125,7 @@ async function scanMapNow(scope = 'all') {
           if (saltGrowingImage) {
             const time = readPlacementTime(placement);
             const key = time.seconds ?? 'unknown';
-            const current = saltGrowing.get(key) || { icon: saltGrowingImage.currentSrc || saltGrowingImage.src, count: 0, seconds: time.seconds, mapKeys: [] };
+            const current = saltGrowing.get(key) || { icon: saltGrowingImage.currentSrc || saltGrowingImage.src, count: 0, seconds: time.seconds, hasPreciseSeconds: time.hasSeconds, mapKeys: [] };
             current.count += 1;
             current.mapKeys.push(`${placement.style.top}|${placement.style.left}`);
             saltGrowing.set(key, current);
@@ -141,7 +141,7 @@ async function scanMapNow(scope = 'all') {
             const group = state === 'ready' ? composterReady : state === 'empty' ? composterEmpty : composterGrowing;
             const key = `${label}|${state}`;
             const time = readPlacementTime(placement);
-            const current = group.get(key) || { label, icon: composterSource, count: 0, seconds: state === 'growing' ? time.seconds : null, mapKeys: [] };
+            const current = group.get(key) || { label, icon: composterSource, count: 0, seconds: state === 'growing' ? time.seconds : null, hasPreciseSeconds: time.hasSeconds, mapKeys: [] };
             current.count += 1;
             current.mapKeys.push(mapKey);
             group.set(key, current);
@@ -241,7 +241,7 @@ async function scanMapNow(scope = 'all') {
               return;
             }
             const time = readPlacementTime(placement);
-            miningGrowingEntries.push({ resource, label: `${titleCase(resource)} Rock`, icon: miningImage.currentSrc || miningImage.src, count: 1, seconds: time.seconds, mapKeys: [mapKey] });
+            miningGrowingEntries.push({ resource, label: `${titleCase(resource)} Rock`, icon: miningImage.currentSrc || miningImage.src, count: 1, seconds: time.seconds, hasPreciseSeconds: time.hasSeconds, mapKeys: [mapKey] });
             return;
           }
           if (!cropMatch) {
@@ -250,7 +250,7 @@ async function scanMapNow(scope = 'all') {
               const stumpImage = images.find((image) => image.classList.contains('opacity-50')) || images.find((image) => (image.currentSrc || image.src || '').includes('/game-assets/resources/stump.png'));
               const time = readPlacementTime(placement);
               if (time.seconds !== null) {
-                treeGrowingEntries.push({ icon: stumpImage?.currentSrc || stumpImage?.src || 'https://sunflower-land.com/game-assets/resources/stump.png', count: 1, seconds: time.seconds, mapKeys: [`${placement.style.top}|${placement.style.left}`] });
+                treeGrowingEntries.push({ icon: stumpImage?.currentSrc || stumpImage?.src || 'https://sunflower-land.com/game-assets/resources/stump.png', count: 1, seconds: time.seconds, hasPreciseSeconds: time.hasSeconds, mapKeys: [`${placement.style.top}|${placement.style.left}`] });
                 return;
               }
               const readyTreeImage = images.find((image) => (image.currentSrc || image.src || '').includes('/game-assets/resources/tree.png'));
@@ -403,6 +403,7 @@ async function scanMapNow(scope = 'all') {
       }
     });
     const fullScan = scope === 'all' || !lastScanData;
+    if (lastScanData) preserveScanCountdowns(result);
     if (fullScan) {
       const previousByKey = new Map((lastScanData?.pets?.awake || []).flatMap((item) => (item.mapKeys || []).map((mapKey) => [mapKey, item])));
       result.pets.awake = (result.pets?.awake || []).map((item) => {
