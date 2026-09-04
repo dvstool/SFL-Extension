@@ -17,6 +17,10 @@ const scanFertilisersButton = document.querySelector('#scan-fertilisers');
 const scanBettyButton = document.querySelector('#scan-betty');
 const scanToolsButton = document.querySelector('#scan-tools');
 const shopResults = document.querySelector('#shop-results');
+const seedPickerResults = document.querySelector('#seed-picker-results');
+const workbenchResults = document.querySelector('#workbench-results');
+const marketTabContent = document.querySelector('#market-tab-content');
+const workbenchTabContent = document.querySelector('#workbench-tab-content');
 const overviewResults = document.querySelector('#overview-results');
 const reloadExtensionButton = document.querySelector('#reload-extension');
 const codeRelease = document.querySelector('#code-release');
@@ -25,6 +29,7 @@ const notificationStatus = document.querySelector('#notification-status');
 const toolTabs = Array.from(document.querySelectorAll('[data-tool-tab]'));
 const toolTabPanels = Array.from(document.querySelectorAll('[data-tool-panel]'));
 const mapActivityTabs = Array.from(document.querySelectorAll('[data-map-activity-tab]'));
+const seedPickerTab = document.querySelector('[data-map-activity-tab="seeds"]');
 const mapActivityContent = document.querySelector('#map-activity-content');
 const seasonIcons = {
   spring: 'data:image/webp;base64,UklGRmwAAABXRUJQVlA4TF8AAAAvCkADECegoG0bNlQ+fwQmECBDMgygoG0bph/Z+EOa5j8A8Hs8O1+BISTJrmYNLhC8fwQvCCR/rM8Q0f8Acxe23xR7zcRenWSvbyW7zhK73hS91hRWM4HmApoALP5wAAA=',
@@ -116,7 +121,7 @@ const pickaxeTools = {
   gold: { name: 'Iron Pickaxe', fallback: 'https://sunflower-land.com/game-assets/tools/iron_pickaxe.png', pattern: /\/tools\/iron_pickaxe\.png(?:[?#]|$)/i }
 };
 const saltRakeFallback = 'https://sunflower-land.com/game-assets/tools/salt_rake.webp';
-const CODE_RELEASED_AT = '03/09/2026 20:40';
+const CODE_RELEASED_AT = '04/09/2026 13:08';
 const beeIcon = 'data:image/webp;base64,UklGRl4AAABXRUJQVlA4TFIAAAAvCcABEC9AEECSRGhzDTfQGmQBJtOYP00iOXRFJmCxNEshuU8y8x+A/1VrdJMUELSNYkXkHODg7ggG4BU8Ef0PEgapbFrZs852/cPsP9DvEGEH';
 const saltUpgradeIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAJVJREFUGJV9kDEOwjAMRV8qlop7ZMnEjDKRo3TjPGy9Cdl6ABYykHugbpghTWoq0SdZlr78rW/DgnWhdrEuiNYAOhTWBXk97/ixpw5XjHYB4scegGmYAUzbmFMEkKW2CCA5RYx1oW35xzTMHACm27uJ/npkq0FXMvwEP31Kf6x35hSNUbZiUIM5xfWY3XB76Ic37XzhC+q2Mek2JJOBAAAAAElFTkSuQmCC';
 
@@ -219,6 +224,7 @@ function activateMapActivityTab(activity) {
     state.hidden = activity !== 'crop' && state.dataset.activity !== activity;
   });
   updateBettyActivityFilter(activity);
+  updateWorkbenchActivityFilter(activity);
 }
 
 function setSeedPicking(active) {
@@ -227,25 +233,38 @@ function setSeedPicking(active) {
 
 function beginSeedPicking(kind) {
   const active = mapActivityTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.mapActivityTab;
-  seedSelectionReturnActivity = active === 'overview' ? 'overview' : null;
+  seedSelectionReturnActivity = active === 'seeds' ? 'overview' : active;
   plantSeedPicking = kind === 'crop';
   fruitSeedPicking = kind === 'fruit';
+  seedPickerKind = kind;
+  if (seedPickerTab) {
+    seedPickerTab.hidden = false;
+    seedPickerTab.textContent = kind === 'fruit' ? 'Hạt Fruit' : 'Hạt Crop';
+  }
   setSeedPicking(true);
-  activateMapActivityTab(kind);
+  renderSeedPicker();
+  activateMapActivityTab('seeds');
   if (!lastBettyScan) scanBettyButton.click();
 }
 
 function updateBettyActivityFilter(activity) {
   const sections = Array.from(shopResults.querySelectorAll('.shop-category-section'));
-  const visible = activity === 'crop' || activity === 'fruit';
-  sections.forEach((section) => { section.hidden = !visible || section.dataset.shopCategory !== activity; });
-  shopResults.hidden = !visible || !sections.some((section) => !section.hidden);
+  const visible = activity === 'market';
+  if (marketTabContent) marketTabContent.hidden = !visible;
+  sections.forEach((section) => { section.hidden = false; });
+  shopResults.hidden = false;
+}
+
+function updateWorkbenchActivityFilter(activity) {
+  if (workbenchTabContent) workbenchTabContent.hidden = activity !== 'workbench';
 }
 
 function updateMapActivityTabIndicators() {
   mapActivityTabs.forEach((tab) => {
     const activity = tab.dataset.mapActivityTab;
-    const readySelector = activity === 'crop' || activity === 'fruit'
+    const readySelector = activity === 'market'
+      ? '#shop-results .shop-card'
+      : activity === 'crop' || activity === 'fruit'
       ? `[data-activity="${activity}"] .crop-card.is-ready, [data-activity="${activity}"] .crop-card.is-empty`
       : activity === 'tools'
         ? `[data-activity="tools"] .shop-card`
@@ -272,13 +291,14 @@ function renderBettyShop(scan) {
   }
   if (!scan.items.length) {
     shopResults.innerHTML = '<div class="empty-state">Không tìm thấy hạt giống trong Betty’s Market.</div>';
+    renderSeedPicker();
     return;
   }
   const renderCards = () => scan.items.map((item) => {
     const name = item.name;
     const displayName = name.replace(/\s+seed$/i, '');
-    const shopCategory = /greenhouse/i.test(item.category || '') ? 'greenhouse' : /fruit|^(apple|banana|blueberry|lemon|orange|grape)\s+seed$/i.test(`${item.category || ''} ${name}`) ? 'fruit' : /flower/i.test(item.category || '') ? 'flower' : 'crop';
-    const stock = `Stock: ${item.stock}`;
+    const shopCategory = seedShopCategory(item);
+    const stock = `${item.stock} in stock`;
     const tier = /basic\s+crop/i.test(item.category) ? 'I' : /medium\s+crop/i.test(item.category) ? 'II' : /advanced\s+crop/i.test(item.category) ? 'III' : '';
     const buyOptions = item.buyOptions.length >= 3 || item.buyOptions.some((option) => /^Buy all$/i.test(option)) ? item.buyOptions : [...item.buyOptions, 'Buy all'];
     const displayRequirements = item.requirements.map((requirement) => /^\s*[\d,.]+\s*$/.test(requirement) ? 'Không đủ coin' : requirement);
@@ -302,19 +322,49 @@ function renderBettyShop(scan) {
     }).join('')}</div>` : '';
     const reason = unavailableReason ? `<p class="shop-requirements">${escapeHtml(unavailableReason)}</p>` : '';
     const statusClass = hasLockedRequirement ? 'is-level-locked' : hasBasketFull ? 'is-basket-full' : item.stock === 0 ? 'is-sold-out' : '';
-    const pickerMeta = `<div class="shop-card-meta"><span>${escapeHtml(stock)}</span></div>`;
+    const growth = item.growthTime || 'Chưa rõ';
+    const pickerMeta = `<div class="shop-card-meta"><span>${escapeHtml(stock)}</span><span class="seed-growth"><img src="https://sunflower-land.com/game-assets/icons/lightning.png" alt="Thời gian lớn" />${escapeHtml(growth)}</span></div>`;
     const cardState = statusClass ? `is-unavailable ${statusClass}` : '';
     return `<article class="shop-card ${cardState} is-seed-choice" data-shop-category="${shopCategory}" data-shop-seed-name="${escapeHtml(name)}" data-shop-slot-index="${escapeHtml(item.slotIndex)}">${tier ? `<b class="shop-tier">${tier}</b>` : ''}<div class="shop-icon-box"><img class="shop-item-icon" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${escapeHtml(getSeedCount(item))}</b></div><div class="shop-card-content"><strong>${escapeHtml(displayName)}</strong>${pickerMeta}${reason}</div>${actions}<span class="shop-select-overlay">Chọn</span></article>`;
   }).join('');
   shopResults.innerHTML = renderCards();
   groupBettyCards(shopResults);
+  renderSeedPicker();
   updateBettyActivityFilter(mapActivityTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.mapActivityTab || 'crop');
+}
+
+function seedShopCategory(item) {
+  const name = String(item?.name || '');
+  const category = String(item?.category || '');
+  return /greenhouse/i.test(category) ? 'greenhouse' : /fruit|^(apple|banana|blueberry|lemon|orange|grape)\s+seed$/i.test(`${category} ${name}`) ? 'fruit' : /flower/i.test(category) ? 'flower' : 'crop';
+}
+
+function renderSeedPicker() {
+  if (!seedPickerResults) return;
+  const kind = fruitSeedPicking ? 'fruit' : 'crop';
+  if (!lastBettyScan) {
+    seedPickerResults.innerHTML = '<div class="empty-state">Đang quét Betty để lấy danh sách hạt…</div>';
+    return;
+  }
+  const seeds = lastBettyScan.items.filter((item) => seedShopCategory(item) === kind);
+  if (!seeds.length) {
+    seedPickerResults.innerHTML = `<div class="empty-state">Không tìm thấy hạt ${kind === 'fruit' ? 'Fruit' : 'Crop'} trong Betty’s Market.</div>`;
+    return;
+  }
+  seedPickerResults.innerHTML = seeds.map((item) => {
+    const name = String(item.name || '').replace(/\s+seed$/i, '');
+    const owned = getSeedCount(item);
+    const growth = item.growthTime || 'Chưa rõ';
+    return `<article class="seed-picker-card" data-seed-picker-choice="true" data-seed-kind="${kind}" data-shop-seed-name="${escapeHtml(item.name)}" data-shop-slot-index="${escapeHtml(item.slotIndex)}"><img class="seed-picker-icon" src="${escapeHtml(item.icon)}" alt="" /><div class="seed-picker-content"><strong>${escapeHtml(name)}</strong><span>Đang có: ×${escapeHtml(owned)}</span><span class="seed-growth"><img src="https://sunflower-land.com/game-assets/icons/lightning.png" alt="Thời gian lớn" />${escapeHtml(growth)}</span></div><span class="seed-picker-overlay">Chọn</span></article>`;
+  }).join('');
 }
 
 function groupBettyCards(container) {
   const groups = [
     ['crop', 'Crop'],
-    ['fruit', 'Fruit']
+    ['fruit', 'Fruit'],
+    ['flower', 'Flower'],
+    ['greenhouse', 'Greenhouse']
   ];
   const cards = Array.from(container.querySelectorAll('.shop-card'));
   const sections = groups.map(([key, label]) => {
@@ -429,6 +479,7 @@ scanBettyButton.addEventListener('click', async () => {
           const stockMatch = details.innerText.match(/([\d,.]+)\s+in stock/i);
           const stock = details.innerText.includes('Sold out') ? 0 : Number((stockMatch?.[1] || '0').replace(/,/g, ''));
           const metricRows = Array.from(details.querySelectorAll('div.flex.justify-between.min-h-\\[26px\\]'));
+          const growthTime = metricRows.find((row) => Array.from(row.querySelectorAll('img')).some((image) => /\/game-assets\/icons\/lightning\.png/i.test(image.currentSrc || image.src || '')))?.innerText.trim() || '';
           const price = metricRows.at(-1)?.innerText.trim() || '';
           const basketMessage = paragraphs.find((text) => /you have too many seeds in your basket/i.test(text));
           const requirements = [
@@ -437,11 +488,11 @@ scanBettyButton.addEventListener('click', async () => {
           ].filter((text) => text && !/^Sold out$/i.test(text) && !/^\d[\d,.]*\s+in stock$/i.test(text));
           const buyOptions = Array.from(details.querySelectorAll('button')).map((button) => button.innerText.trim()).filter((text) => /^Buy\s+(?:\d+|All)$/i.test(text));
           const fruitName = name.replace(/\s+(?:Seed|Plant)$/i, '');
-          return name && icon ? { name: /\bSeed$/i.test(name) ? name : `${fruitName} Seed`, category: category || (/^(Apple|Banana|Blueberry|Lemon|Orange|Grape)(?:\s+(?:Seed|Plant))?$/i.test(name) ? 'Fruit' : ''), icon: icon.currentSrc || icon.src, stock: Number.isFinite(stock) ? stock : 0, price, requirements: [...new Set(requirements)], buyOptions } : null;
+          return name && icon ? { name: /\bSeed$/i.test(name) ? name : `${fruitName} Seed`, category: category || (/^(Apple|Banana|Blueberry|Lemon|Orange|Grape)(?:\s+(?:Seed|Plant))?$/i.test(name) ? 'Fruit' : ''), icon: icon.currentSrc || icon.src, stock: Number.isFinite(stock) ? stock : 0, growthTime, price, requirements: [...new Set(requirements)], buyOptions } : null;
         };
         const selectedSlot = slots.find((slot) => slot.parentElement?.querySelector('img[src*="/game-assets/ui/select/selectbox_"]'));
         const orderedSlots = slots.map((slot, slotIndex) => ({ slot, slotIndex })).sort((left, right) => Number(right.slot === selectedSlot) - Number(left.slot === selectedSlot));
-        const signature = (item) => item ? `${item.name}|${item.stock}|${item.price}|${item.buyOptions.join('|')}|${item.requirements.join('|')}` : '';
+        const signature = (item) => item ? `${item.name}|${item.stock}|${item.growthTime}|${item.price}|${item.buyOptions.join('|')}|${item.requirements.join('|')}` : '';
         let previousSignature = signature(readSelectedItem());
         const items = [];
         for (const { slot, slotIndex } of orderedSlots) {
@@ -485,7 +536,24 @@ function renderToolsScan(scan) {
     items.forEach((item) => toolCounts.set(item.icon, Math.max(0, Number(item.count) || 0)));
     toolBagScanned = true;
   }
+  renderWorkbench(scan);
   renderOverview();
+}
+
+function renderWorkbench(scan = lastToolsScan) {
+  if (!workbenchResults) return;
+  const items = scan?.items || [];
+  if (!items.length) {
+    workbenchResults.innerHTML = '<div class="empty-state">Chưa quét Tools. Mở Workbench rồi bấm Quét Tools.</div>';
+    return;
+  }
+  const categories = ['Land Tools', 'Water Tools', 'Animal Tools'];
+  workbenchResults.innerHTML = categories.map((category) => {
+    const tools = items.filter((item) => item.category === category);
+    if (!tools.length) return '';
+    const cards = tools.map((item) => overviewToolCard(item.name, item.icon, item.count)).join('');
+    return `<section class="shop-category-section workbench-category-section"><h2>${escapeHtml(category)}</h2><div class="shop-category-grid">${cards}</div></section>`;
+  }).join('') || '<div class="empty-state">Không tìm thấy tool trong Workbench.</div>';
 }
 
 scanToolsButton.addEventListener('click', async () => {
@@ -561,14 +629,24 @@ scanToolsButton.addEventListener('click', async () => {
         for (const category of categories) {
           const heading = Array.from(dialog.querySelectorAll('div')).find((element) => element.textContent.trim() === category);
           const section = heading?.nextElementSibling;
-          const slots = Array.from(section?.querySelectorAll('.bg-brown-600') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
+          // Available and unavailable tools use different brown shades.
+          // Stone Pickaxe, for example, is rendered with bg-brown-700.
+          const slots = Array.from(section?.querySelectorAll('.bg-brown-600, .bg-brown-700') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
           for (const [slotIndex, slot] of slots.entries()) {
             const image = slot.querySelector('img[alt="item"]');
-            slot.click();
-            await sleep(35);
             const icon = image.currentSrc || image.src;
+            slot.click();
+            // The Workbench keeps the previous tool's panel visible briefly.
+            // Wait for the selected tool image before reading its name.
+            await waitFor(() => {
+              const detail = Array.from(dialog.querySelectorAll('div')).find((element) => element.classList.contains('sm:w-2/5'));
+              return Array.from(detail?.querySelectorAll('img') || []).some((detailImage) => (detailImage.currentSrc || detailImage.src || '') === icon);
+            }, 700);
+            await sleep(45);
             const details = await readSelectedDetails();
             const name = details.name || fallbackName(icon);
+            // “N in stock” is the Workbench shop/crafting stock, not the
+            // player's inventory. Inventory is shown only on the tool-slot badge.
             const count = readCount(slot);
             if (!items.some((item) => item.icon === icon)) items.push({ ...details, name, icon, count, category, slotIndex });
           }
@@ -611,7 +689,7 @@ async function refreshPurchasedTool(category, slotIndex) {
         Array.from(dialog.querySelectorAll('button, div.cursor-pointer')).find((element) => element.textContent.trim() === 'Tools')?.click();
         await sleep(70);
         const heading = Array.from(dialog.querySelectorAll('div')).find((element) => element.textContent.trim() === requestedCategory);
-        const slots = Array.from(heading?.nextElementSibling?.querySelectorAll('.bg-brown-600') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
+        const slots = Array.from(heading?.nextElementSibling?.querySelectorAll('.bg-brown-600, .bg-brown-700') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
         const slot = slots[requestedSlotIndex];
         if (!slot) return { error: 'Index Tool đã thay đổi. Hãy Quét Tools lại.' };
         slot.click();
@@ -650,6 +728,7 @@ async function refreshPurchasedTool(category, slotIndex) {
   if (!item || !result?.item) return false;
   Object.assign(item, result.item);
   toolCounts.set(item.icon, item.count);
+  renderWorkbench();
   renderOverview();
   return true;
 }
@@ -693,7 +772,7 @@ mapActivityContent.addEventListener('click', async (event) => {
         Array.from(dialog.querySelectorAll('button, div.cursor-pointer')).find((element) => element.textContent.trim() === 'Tools')?.click();
         await sleep(70);
         const heading = Array.from(dialog.querySelectorAll('div')).find((element) => element.textContent.trim() === requestedCategory);
-        const slots = Array.from(heading?.nextElementSibling?.querySelectorAll('.bg-brown-600') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
+        const slots = Array.from(heading?.nextElementSibling?.querySelectorAll('.bg-brown-600, .bg-brown-700') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
         const slot = slots[requestedSlotIndex];
         if (!slot) return { error: 'Index Tool đã thay đổi. Hãy Quét Tools lại.' };
         slot.click();
@@ -745,7 +824,7 @@ async function selectSeedForPlant(card, seedKind = 'crop') {
   if (!seedName || !Number.isInteger(slotIndex)) return;
   const selectedSeed = {
     name: seedName.replace(/\s+seed$/i, ''),
-    icon: card.querySelector('.shop-item-icon')?.currentSrc || card.querySelector('.shop-item-icon')?.src || '',
+    icon: card.querySelector('.shop-item-icon, .seed-picker-icon')?.currentSrc || card.querySelector('.shop-item-icon, .seed-picker-icon')?.src || '',
     count: getSeedCount(seedName),
     isSeed: true
   };
@@ -754,7 +833,9 @@ async function selectSeedForPlant(card, seedKind = 'crop') {
   plantSeedPicking = false;
   fruitSeedPicking = false;
   setSeedPicking(false);
+  if (seedPickerTab) seedPickerTab.hidden = true;
   if (lastBettyScan) renderBettyShop(lastBettyScan);
+  renderSeedPicker();
   if (lastScanData) {
     renderCropScan(lastScanData, true);
     renderFruitScan(lastScanData.fruit);
@@ -811,6 +892,12 @@ async function selectSeedForPlant(card, seedKind = 'crop') {
     log(error.message || 'Không thể chọn hạt trồng.');
   }
 }
+
+mapActivityContent.addEventListener('click', (event) => {
+  const card = event.target.closest('[data-seed-picker-choice]');
+  if (!card || (!plantSeedPicking && !fruitSeedPicking)) return;
+  selectSeedForPlant(card, card.dataset.seedKind === 'fruit' ? 'fruit' : 'crop');
+});
 
 shopResults.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-shop-buy]');
@@ -1501,6 +1588,13 @@ function renderOverview() {
     overviewResults.append(leavingCard);
     leavingCard.addEventListener('animationend', () => leavingCard.remove(), { once: true });
   });
+  // Re-rendering replaces the Overview DOM node. Preserve the currently open
+  // activity instead of letting the new Overview node appear by default.
+  const activeActivity = mapActivityTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.mapActivityTab || 'overview';
+  const overviewGroup = overviewResults.querySelector('.activity-group[data-activity="overview"]');
+  if (overviewGroup) overviewGroup.hidden = activeActivity !== 'overview';
+  updateBettyActivityFilter(activeActivity);
+  updateWorkbenchActivityFilter(activeActivity);
   updateMapActivityTabIndicators();
   schedulePetSleepCheck();
 }
@@ -1565,7 +1659,11 @@ function renderTreeScan(trees) {
 
 function pickaxeSource(resource) {
   const tool = pickaxeTools[resource];
-  return tool && Array.from(toolCounts.keys()).find((source) => tool.pattern.test(source));
+  if (!tool) return '';
+  const sourceMatch = Array.from(toolCounts.keys()).find((source) => tool.pattern.test(source));
+  if (sourceMatch) return sourceMatch;
+  const wantedName = String(tool.name || '').replace(/[^a-z]/gi, '').toLowerCase();
+  return lastToolsScan?.items.find((item) => String(item.name || '').replace(/[^a-z]/gi, '').toLowerCase() === wantedName)?.icon || '';
 }
 
 function updateToolCount(icon, count) {
@@ -1573,6 +1671,7 @@ function updateToolCount(icon, count) {
   toolCounts.set(icon, nextCount);
   const scannedTool = lastToolsScan?.items.find((item) => item.icon === icon);
   if (scannedTool) scannedTool.count = nextCount;
+  renderWorkbench();
 }
 
 function miningCard(item, type) {
