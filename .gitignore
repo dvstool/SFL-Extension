@@ -1,0 +1,4 @@
+# Owner-only licensing console and Cloudflare deployment files.
+.local/
+.wrangler/
+sidepanel/admin.local.js

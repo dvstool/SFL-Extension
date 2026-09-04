@@ -6,8 +6,6 @@ async function initialiseReadyNotifications() {
   readyNotificationsEnabled = enabled;
   if (readyNotificationsToggle) readyNotificationsToggle.checked = enabled;
   if (notificationStatus) notificationStatus.textContent = enabled ? 'Đang bật.' : 'Đang tắt.';
-  const headerIcon = document.querySelector('.brand-icon')?.currentSrc || document.querySelector('.brand-icon')?.src || '';
-  if (headerIcon) chrome.runtime.sendMessage({ type: 'SET_NOTIFICATION_HEADER_ICON', icon: headerIcon });
 }
 
 function readyNotificationEntry(card, when) {
@@ -15,7 +13,7 @@ function readyNotificationEntry(card, when) {
   const count = Number(card?.dataset.count || 1);
   const prefix = count > 1 ? `${count} ${title}` : title;
   const mapKeys = card?.dataset.mapKeys || card?.dataset.resource || title;
-  const icon = document.querySelector('.brand-icon')?.currentSrc || document.querySelector('.brand-icon')?.src || saltUpgradeIcon;
+  const icon = 'assets/notification-icon.png';
   return { id: `${prefix}|${mapKeys}|${when}`, when, icon };
 }
 
@@ -34,7 +32,7 @@ async function notifyReadyNow(card, when) {
   chrome.runtime.sendMessage({ type: 'CANCEL_READY_NOTIFICATION', id: entry.id });
   try {
     await chrome.notifications.create(`sfl-countdown-${Date.now()}`, {
-      type: 'basic', iconUrl: entry.icon, title: 'Sunflower Tools',
+      type: 'basic', iconUrl: 'assets/notification-icon.png', title: 'Sunflower Tools',
       message: `${entry.id.split('|')[0]} đã sẵn sàng.`, priority: 2
     });
   } catch (error) { console.error('Không thể gửi thông báo hoàn tất:', error); }
@@ -45,7 +43,7 @@ readyNotificationsToggle?.addEventListener('change', async () => {
   readyNotificationsEnabled = enabled;
   if (notificationStatus) notificationStatus.textContent = enabled ? 'Đang gửi thông báo thử…' : 'Đang tắt.';
   try {
-    if (enabled) await chrome.notifications.create({ type: 'basic', iconUrl: saltUpgradeIcon, title: 'Sunflower Tools', message: 'Thông báo sẵn sàng đã được bật.', priority: 2 });
+    if (enabled) await chrome.notifications.create({ type: 'basic', iconUrl: 'assets/notification-icon.png', title: 'Sunflower Tools', message: 'Thông báo sẵn sàng đã được bật.', priority: 2 });
     chrome.runtime.sendMessage({ type: 'SET_READY_NOTIFICATIONS', enabled });
     if (notificationStatus && enabled) notificationStatus.textContent = 'Chrome đã tạo thông báo thử.';
   } catch (error) { if (notificationStatus) notificationStatus.textContent = `Lỗi thông báo: ${error.message || error}`; }

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "A native split-screen side panel for Sunflower Land.",
   "permissions": ["sidePanel", "tabs", "windows", "scripting", "storage", "alarms", "notifications"],
-  "host_permissions": ["https://sunflower-land.com/*"],
+  "host_permissions": ["https://sunflower-land.com/*", "https://*.workers.dev/*"],
   "action": {
     "default_title": "Open Sunflower Tools",
     "default_icon": "assets/sunflower-tools-icon.png"

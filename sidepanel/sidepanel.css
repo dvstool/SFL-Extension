@@ -458,3 +458,65 @@ h1 { font-size: 15px; letter-spacing: -.25px; }
 .resource-tool-count.is-empty b { border-color: #fecaca; background: #b4233e; }
 .resource-tool-count.is-unscanned { border-color: #fbbf24; background: linear-gradient(145deg, #5b4319, #332818); }
 .resource-tool-count.is-unscanned b { border-color: #fde68a; color: #fff7d6; background: #8a5a10; }
+
+.license-gate {
+  position: fixed;
+  z-index: 99999;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 12, 24, .96);
+}
+.license-gate-card {
+  display: grid;
+  width: min(310px, 100%);
+  gap: 12px;
+  padding: 22px;
+  border: 1px solid #38bdf8;
+  border-radius: 14px;
+  color: #dceeff;
+  background: linear-gradient(145deg, #102b49, #09192b);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+  text-align: center;
+}
+.license-gate-card img { width: 44px; height: 44px; margin: 0 auto; image-rendering: pixelated; }
+.license-gate-card h2, .license-gate-card p { margin: 0; }
+.license-gate-card p, .license-gate-card small { color: #9fb8cf; }
+.license-gate-card label { display: grid; gap: 6px; color: #dceeff; font-weight: 700; text-align: left; }
+.license-gate-card input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #4077a1; border-radius: 7px; color: #e6f5ff; background: #071728; font: 700 12px/1.2 Consolas, monospace; }
+.license-gate-card button { padding: 10px; border: 1px solid #5eead4; border-radius: 7px; color: #ecfeff; background: #0f766e; font-weight: 800; cursor: pointer; }
+
+.admin-panel { overflow: auto; padding-bottom: 18px; }
+.admin-hero { margin: -4px 0 12px; padding: 12px 14px; border: 1px solid rgba(45, 212, 191, .48); border-radius: 10px; background: linear-gradient(135deg, rgba(13, 88, 94, .84), rgba(15, 48, 83, .86)); }
+.admin-hero span, .admin-created-license span { color: #7dd3fc; font: 800 9px/1 Consolas, monospace; letter-spacing: .75px; }
+.admin-hero h2, .admin-hero p { margin: 5px 0 0; }
+.admin-hero h2 { color: #f0fdfa; font-size: 18px; }
+.admin-hero p { color: #b9e3e6; font-size: 11px; }
+.admin-form { display: grid; gap: 9px; padding: 12px; border: 1px solid rgba(93, 172, 224, .38); border-radius: 9px; background: rgba(13, 39, 64, .62); }
+.admin-form + .admin-form, .admin-license-list { margin-top: 12px; }
+.admin-form-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #e0f2fe; }
+.admin-form-heading small, .admin-form-status { color: #8fb9d6; font-size: 10px; }
+.admin-form-grid { display: grid; grid-template-columns: 1.4fr .8fr; gap: 8px; }
+.admin-form label { display: grid; gap: 4px; color: #c5dff2; font-size: 12px; font-weight: 700; }
+.admin-form input { min-width: 0; padding: 8px; border: 1px solid #4077a1; border-radius: 6px; color: #e6f5ff; background: #071728; }
+.admin-form button, .admin-license-row button { padding: 7px 9px; border: 1px solid #5ca8db; border-radius: 6px; color: #e7f7ff; background: #154b75; font-weight: 700; cursor: pointer; }
+.admin-form > button { border-color: #5eead4; background: #0f766e; }
+.admin-created-license { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 11px 12px; border: 1px solid #facc15; border-radius: 9px; background: linear-gradient(120deg, rgba(111, 82, 13, .65), rgba(37, 60, 58, .75)); }
+.admin-created-license div { display: grid; min-width: 0; gap: 5px; }
+.admin-created-license code { overflow: hidden; color: #fef08a; font: 800 14px/1.2 Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.admin-created-license small { color: #d7f3e8; font-size: 10px; }
+.admin-created-license button { flex: none; padding: 8px; border: 1px solid #fef08a; border-radius: 6px; color: #fffde7; background: #8a6110; font-weight: 800; cursor: pointer; }
+.admin-list-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; color: #dceeff; }
+.admin-list-heading button { width: 26px; height: 26px; padding: 0; border: 1px solid #4276a0; border-radius: 6px; color: #dceeff; background: #123c60; cursor: pointer; }
+.admin-license-list { display: grid; gap: 8px; }
+.admin-license-row { display: grid; gap: 6px; padding: 10px; border: 1px solid rgba(93, 172, 224, .38); border-radius: 8px; color: #dceeff; background: rgba(13, 39, 64, .62); }
+.admin-license-row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.admin-license-row-top code { color: #93c5fd; font: 800 12px/1 Consolas, monospace; }
+.admin-license-status { padding: 3px 5px; border-radius: 4px; font-size: 9px; font-weight: 800; }
+.admin-license-status.is-active { color: #bbf7d0; background: #166534; }
+.admin-license-status.is-revoked { color: #fecdd3; background: #9f1239; }
+.admin-license-row small { color: #9fbed7; }
+.admin-license-actions { display: flex; gap: 6px; }
+.admin-license-row button[data-action="revoke"] { border-color: #fb7185; color: #ffe4e6; background: #7f1d35; }
+.admin-license-row button[data-action="activate"] { border-color: #5eead4; color: #ecfdf5; background: #0f766e; }

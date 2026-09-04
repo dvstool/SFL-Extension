@@ -6,10 +6,10 @@ async function rememberSunflowerTab(tab) {
 
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
-  const { readyNotificationsEnabled = true, notificationHeaderIcon } = await chrome.storage.local.get(['readyNotificationsEnabled', 'notificationHeaderIcon']);
+  const { readyNotificationsEnabled = true } = await chrome.storage.local.get('readyNotificationsEnabled');
   if (readyNotificationsEnabled) {
     await chrome.storage.local.set({ readyNotificationsEnabled: true });
-    showReadyNotification('Đã bật thông báo sẵn sàng.', `sfl-extension-reloaded-${Date.now()}`, notificationHeaderIcon || chrome.runtime.getURL('assets/notification-icon.svg'));
+    showReadyNotification('Đã bật thông báo sẵn sàng.', `sfl-extension-reloaded-${Date.now()}`);
   }
 });
 
@@ -30,11 +30,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'SUNFLOWER_TAB_CONNECTED') {
     rememberSunflowerTab({ id: message.tabId, url: message.url });
   }
-  if (message.type === 'SET_NOTIFICATION_HEADER_ICON' && message.icon) {
-    chrome.storage.local.set({ notificationHeaderIcon: message.icon });
-  }
   if (message.type === 'SHOW_READY_NOTIFICATION') {
-    showReadyNotification(message.message || 'Tiến trình đã sẵn sàng.', message.id || `sfl-ready-${Date.now()}`, message.icon).then(sendResponse);
+    showReadyNotification(message.message || 'Tiến trình đã sẵn sàng.', message.id || `sfl-ready-${Date.now()}`).then(sendResponse);
     return true;
   }
   if (message.type === 'SET_READY_NOTIFICATIONS') {
@@ -53,7 +50,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 const readyAlarmPrefix = 'sfl-ready:';
-const notificationIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAJVJREFUGJV9kDEOwjAMRV8qlop7ZMnEjDKRo3TjPGy9Cdl6ABYykHugbpghTWoq0SdZlr78rW/DgnWhdrEuiNYAOhTWBXk97/ixpw5XjHYB4scegGmYAUzbmFMEkKW2CCA5RYx1oW35xzTMHACm27uJ/npkq0FXMvwEP31Kf6x35hSNUbZiUIM5xfWY3XB76Ic37XzhC+q2Mek2JJOBAAAAAElFTkSuQmCC';
+const notificationIcon = 'assets/notification-icon.png';
 const readyEntryStorageKey = 'readyNotificationEntries';
 
 async function scheduleReadyNotifications(entries) {
@@ -72,7 +69,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (!readyNotificationsEnabled) return;
   const title = alarm.name.slice(readyAlarmPrefix.length).split('|')[0] || 'Sunflower Tools';
   const { [readyEntryStorageKey]: entries = {} } = await chrome.storage.local.get(readyEntryStorageKey);
-  showReadyNotification(`${title} đã sẵn sàng.`, alarm.name, entries[alarm.name.slice(readyAlarmPrefix.length)]?.icon);
+  showReadyNotification(`${title} đã sẵn sàng.`, alarm.name);
 });
 
 async function showReadyNotification(message, id, iconUrl = notificationIcon) {
