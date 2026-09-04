@@ -85,7 +85,7 @@ const pickaxeTools = {
 };
 const saltRakeFallback = 'https://sunflower-land.com/game-assets/tools/salt_rake.webp';
 // Update this timestamp whenever the extension code is released.
-const CODE_RELEASED_AT = '04/09/2026 · 16:55';
+const CODE_RELEASED_AT = '04/09/2026 · 17:05';
 const beeIcon = 'data:image/webp;base64,UklGRl4AAABXRUJQVlA4TFIAAAAvCcABEC9AEECSRGhzDTfQGmQBJtOYP00iOXRFJmCxNEshuU8y8x+A/1VrdJMUELSNYkXkHODg7ggG4BU8Ef0PEgapbFrZs852/cPsP9DvEGEH';
 const saltUpgradeIcon = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAJVJREFUGJV9kDEOwjAMRV8qlop7ZMnEjDKRo3TjPGy9Cdl6ABYykHugbpghTWoq0SdZlr78rW/DgnWhdrEuiNYAOhTWBXk97/ixpw5XjHYB4scegGmYAUzbmFMEkKW2CCA5RYx1oW35xzTMHACm27uJ/npkq0FXMvwEP31Kf6x35hSNUbZiUIM5xfWY3XB76Ic37XzhC+q2Mek2JJOBAAAAAElFTkSuQmCC';
 

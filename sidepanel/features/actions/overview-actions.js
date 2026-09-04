@@ -145,7 +145,7 @@ async function fertiliseGrowingCard(card, fertiliserIndex) {
         await sleep(100);
       }
       await sleep(300);
-      return { applied, remaining: Math.max(0, available - applied), scannedFertilisers };
+      return { applied, remaining: Math.max(0, available - applied), fertilisedKeys: targets.slice(0, applied).map((item) => item.placementKey), scannedFertilisers };
     },
     args: [fertiliserSource, cropName, timeGroup, mapKeys, expectedCount, resource, !fertiliserCounts.has(fertiliserSource)]
   });
@@ -159,6 +159,7 @@ async function fertiliseGrowingCard(card, fertiliserIndex) {
   }
   if (result?.error) throw new Error(result.error);
   fertiliserCounts.set(fertiliserSource, result.remaining);
+  if (result?.applied) applyFertiliserResult(resource, result.fertilisedKeys || [], fertiliserIndex + 1);
   return result;
 }
 

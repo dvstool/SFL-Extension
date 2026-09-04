@@ -51,6 +51,27 @@ function applyPlantResult(result) {
   startCountdowns();
 }
 
+function applyFertiliserResult(resource, mapKeys = [], fertiliserType = 0) {
+  const changedKeys = new Set(mapKeys);
+  const collection = resource === 'fruit' ? lastScanData?.fruit : lastScanData;
+  if (!changedKeys.size || !collection?.growing) return;
+
+  const fertilised = [];
+  collection.growing = collection.growing.flatMap((item) => {
+    const affectedKeys = (item.mapKeys || []).filter((key) => changedKeys.has(key));
+    const remainingKeys = (item.mapKeys || []).filter((key) => !changedKeys.has(key));
+    if (affectedKeys.length) fertilised.push({ ...item, count: affectedKeys.length, mapKeys: affectedKeys, fertilised: true, fertiliserType });
+    return remainingKeys.length ? [{ ...item, count: remainingKeys.length, mapKeys: remainingKeys }] : [];
+  });
+  fertilised.forEach((item) => {
+    const existing = collection.growing.find((candidate) => candidate.label === item.label && Number(candidate.fertiliserType || 0) === Number(item.fertiliserType || 0) && Number(candidate.seconds) === Number(item.seconds) && Boolean(candidate.fertilised));
+    if (existing) {
+      existing.count += item.count;
+      existing.mapKeys.push(...item.mapKeys);
+    } else collection.growing.push(item);
+  });
+}
+
 function refreshAffectedSection(card, sections = []) {
   if (!lastScanData) return;
   const keys = new Set(String(card?.dataset?.mapKeys || '').split('||').filter(Boolean));
