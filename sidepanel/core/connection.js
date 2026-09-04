@@ -31,7 +31,6 @@ function renderConnection(tab) {
   connectedContent.hidden = !connected;
   status.className = `connection ${connected ? 'is-connected' : 'is-disconnected'}`;
   status.innerHTML = `<span></span> ${connected ? 'Đã kết nối Sunflower Land' : 'Chưa kết nối Sunflower Land'}`;
-  siteLabel.textContent = connected ? 'sunflower-land.com • connected' : 'Mở sunflower-land.com để kết nối';
   if (!connected) landInfo.textContent = 'Mở Sunflower Land để đọc thông tin land.';
   return connected;
 }
