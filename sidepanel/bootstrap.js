@@ -5,6 +5,7 @@ async function bootstrapPanel() {
   if (!licensed) return;
   log('Sẵn sàng.');
   await initialisePanelConnection();
+  window.licenseManager?.startWatchdog?.();
 }
 
 void bootstrapPanel();

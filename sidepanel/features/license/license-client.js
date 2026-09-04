@@ -7,6 +7,8 @@
   const installationKey = 'licenseInstallationId';
   const offlineGraceMs = 3 * 24 * 60 * 60 * 1000;
   const activationTimeoutMs = 12_000;
+  const revalidationIntervalMs = 60_000;
+  let revalidationTimer;
 
   function isEnabled() {
     return Boolean(config.enabled && apiBaseUrl);
@@ -69,7 +71,11 @@
         signal: controller.signal
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.active) throw new Error(result.message || 'Key không hợp lệ hoặc đã hết hạn.');
+      if (!response.ok || !result.active) {
+        const error = new Error(result.message || 'Key không hợp lệ hoặc đã hết hạn.');
+        error.licenseDenied = true;
+        throw error;
+      }
       return result;
     } catch (error) {
       if (error?.name === 'AbortError') throw new Error('Máy chủ license không phản hồi sau 12 giây. Hãy thử lại.');
@@ -108,7 +114,8 @@
       renderLicenseFooter(nextState);
       return true;
     } catch (error) {
-      if (canUseCachedLicense(savedState)) return true;
+      // Offline grace applies only to network failures, never to revoked or expired keys.
+      if (!error?.licenseDenied && canUseCachedLicense(savedState)) return true;
       gate.hidden = false;
       input.value = savedState?.key || '';
       message.textContent = activationErrorMessage(error);
@@ -136,5 +143,24 @@
     });
   }
 
-  window.licenseManager = Object.freeze({ requireActivation, isEnabled });
+  function startWatchdog() {
+    if (revalidationTimer || window.SUNFLOWER_OWNER_ADMIN || !isEnabled()) return;
+    revalidationTimer = setInterval(async () => {
+      const stored = await chrome.storage.local.get(storageKey);
+      const state = stored[storageKey];
+      if (!state?.active || !state.key) return;
+      try {
+        const result = await callActivation(state.key);
+        const nextState = { ...state, active: true, verifiedAt: Date.now(), expiresAt: result.expiresAt || null };
+        await chrome.storage.local.set({ [storageKey]: nextState });
+        renderLicenseFooter(nextState);
+      } catch (error) {
+        if (!error?.licenseDenied && canUseCachedLicense(state)) return;
+        await chrome.storage.local.set({ [storageKey]: { ...state, active: false } });
+        window.location.reload();
+      }
+    }, revalidationIntervalMs);
+  }
+
+  window.licenseManager = Object.freeze({ requireActivation, isEnabled, startWatchdog });
 })();
