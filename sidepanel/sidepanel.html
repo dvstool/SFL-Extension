@@ -13,10 +13,11 @@
           <img class="brand-icon" alt="Sunflower Tools" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABelBMVEVjx02XgDx5qEZev1Vcu1ppr1KKkUHalT2skz9/oURXs2FfoGKLiEzQcCvOVyz/+U7PZCu/iDfXgyn9zyD4hCL+7Uj6sTL7qiDvuSO6azFrskxxvVGPdEj/3h/8wCD9yCC+Si+Dc0abNECTSUKa7omB62uejkL5jin+1iBzPjnAfCv3diKLXkTOWWH2dXrjrkH540n91z2GTjaxXDTuVVyhakDqwjGugDXWTFS9PUfixMhQZ1lXp0toOTu1i5S+V2HTp63///+9vMBihWrCmj+dVjHNiC4mK0TR1NvGi5KbmqGbbTiSQjVbYHXt8PSDhpRBbkjg5e36oiGoRjJaV2M5NkRRrGlwkFlBRlyQlaQ4WEdHikZQgEXHYzRjnkfk0aHu045ZtUxSVz1gc0FLkkcxcEX9zn/8u0s7g0gmXEItaUQxT052e4zwmmnyc0Njf3A4fEfxvcHzlppstm906FvChWmchmCLqlphW0FiRTxpZmxSRkE1VEVFTkLN7pTfAAACHklEQVR4AbxNswEDAQDM27Zte//JYqPNdefdHwEAALj7AQhGUBTDMBwlvvskRTMsx3EYL3wdOfqiJCucomq6YR4FyzTNl4AtOo6jOa7nOJJ/FIIwjJ78OEnZLNeKoihdtzoG6qZt2/DJB7p+UMdjYCzdvp+ikz/P0e0lIZeOU9bihK3nOD88lEkXiq3CYBSAuS5zd3d3r6UTZCOjLqHr6HCZu7z7QtL5qcL5sB9WF3HW1jcCZfHTB60UzNXUBEPhtbW1qQiIbr6I31szra1tuN/e6W6dYbkIz/MRAIDwKr7Vtox2L+0u7fT0jOyJELxkXyqDyp2Grobmpu7u0dFlFgAIAYx9AD8rqxom8CSb460JDJICiKbeg//pdKa31x91714WgBgB/i5gLv8CkCwXCoXfBxIGoHh4WPT7V/AjEFAUpXRUklUtCwHQDUMnfawMGNUMBBjLtG3NclwIi96xB/1eOFEpQBpCAc20TxEypRwHz87PIHzXM+qpH9MmyywH6P5j+6+DGrywbcsyJR8o2RggiWEhKXjNJb6fP9IdV5Z5fYN7lvYEkJPE4PJnBULpq6urG0ZlCaC9mItFHTwF8tSm0x0dHQy6rWNjRHDZmMhmsxsKLuksyI98N1IncjEIo/d14srDoxxgPkYtzY+wLo6YGtkeubNU5RMInOZXHkny2xMLJQ2pn4CionJMZ/wJ9wHmiyCERqX957wBegLPF8afAf2inikAAAAASUVORK5CYII=" />
           <div class="brand-meta">
             <h1>Sunflower Tools</h1>
-            <p class="code-release" id="code-release">Mã cập nhật: đang tải…</p>
+            <p class="code-release" id="code-release" title="Thời điểm phát hành phiên bản hiện tại">--/--/---- · --:--</p>
           </div>
           <div class="header-actions">
             <p class="connection is-disconnected" id="connection-status"><span></span> Chưa kết nối Sunflower Land</p>
+            <button class="header-icon-button" id="open-settings" type="button" title="Cài đặt" aria-label="Mở cài đặt">⚙</button>
             <button class="reload-extension-button" id="reload-extension" type="button" title="Reload extension" aria-label="Reload extension">↻</button>
           </div>
         </div>
@@ -27,11 +28,6 @@
           <div><span class="connection-empty-icon" aria-hidden="true">🌻</span><h2>Kết nối Sunflower Land</h2><p>Mở game rồi kết nối để dùng các công cụ.</p><button class="connect-button" id="connect-button" type="button">Kết nối</button></div>
         </section>
         <div id="connected-content" hidden>
-        <nav class="tool-tabs" role="tablist" aria-label="Nội dung panel">
-          <button class="tool-tab is-active" type="button" role="tab" aria-selected="true" data-tool-tab="map">Map</button>
-          <button class="tool-tab" type="button" role="tab" aria-selected="false" data-tool-tab="log">Nhật ký</button>
-          <button class="tool-tab" type="button" role="tab" aria-selected="false" data-tool-tab="settings">Cài đặt</button>
-        </nav>
         <section class="tool-tab-panel" id="map-panel" data-tool-panel="map">
           <div class="map-sticky-controls">
             <div class="map-summary">
@@ -51,18 +47,50 @@
             </div>
           </section>
         </section>
-        <section class="tool-tab-panel panel-log-section" data-tool-panel="log" hidden>
-          <h2>Nhật ký</h2>
-          <div class="panel-log" id="panel-log"></div>
-        </section>
         <section class="tool-tab-panel settings-panel" data-tool-panel="settings" hidden>
-          <h2>Cài đặt</h2>
+          <div class="settings-header"><button id="close-settings" type="button" class="settings-back-button">← Quay lại</button><h2>Cài đặt</h2></div>
           <label class="settings-toggle"><span><b>Thông báo sẵn sàng</b><small>Báo khi tiến trình đếm ngược hoàn tất. Bật lên để nhận thông báo thử.</small><small id="notification-status" class="notification-status"></small></span><input id="ready-notifications" type="checkbox" role="switch" /><i aria-hidden="true"></i></label>
         </section>
         </div>
       </main>
+      <section class="persistent-log" aria-label="Nhật ký hoạt động">
+        <div class="persistent-log-heading"><h2>Nhật ký</h2><span>Hoạt động mới nhất</span></div>
+        <div class="panel-log" id="panel-log" aria-live="polite"></div>
+      </section>
       <footer class="app-footer"><span id="site-label">Mở sunflower-land.com để kết nối</span></footer>
     </div>
+    <!-- Shared helpers and feature renderers load before the app coordinator. -->
+    <script src="core/ui-utils.js"></script>
+    <script src="core/connection.js"></script>
+    <script src="features/renderers/market-ui.js"></script>
+    <script src="features/renderers/workbench-view.js"></script>
     <script src="sidepanel.js"></script>
+    <script src="features/schedulers/ready-notifications.js"></script>
+    <script src="features/schedulers/pet-scheduler.js"></script>
+    <script src="features/state/composter-state.js"></script>
+    <script src="features/state/resource-state.js"></script>
+    <script src="features/state/tree-state.js"></script>
+    <script src="features/schedulers/countdown-controller.js"></script>
+    <script src="features/state/seed-inventory.js"></script>
+    <script src="features/state/profession-scan-state.js"></script>
+    <script src="features/navigation/tabs.js"></script>
+    <script src="features/actions/npc-minigame-actions.js"></script>
+    <script src="features/actions/connection-actions.js"></script>
+    <script src="features/scanners/inventory-scanner.js"></script>
+    <script src="features/scanners/map-scanner.js"></script>
+    <script src="features/cards/crop-cards.js"></script>
+    <script src="features/cards/resource-cards.js"></script>
+    <script src="features/cards/fruit-cards.js"></script>
+    <script src="features/renderers/map-renderers.js"></script>
+    <script src="features/renderers/overview-renderer.js"></script>
+    <script src="features/scanners/map-dom-scanner.js"></script>
+    <script src="features/actions/market-actions.js"></script>
+    <script src="features/actions/resource-actions.js"></script>
+    <script src="features/actions/crop-harvest-actions.js"></script>
+    <script src="features/actions/farm-actions.js"></script>
+    <script src="features/actions/overview-actions.js"></script>
+    <script src="features/actions/map-card-highlight.js"></script>
+    <script src="features/actions/market-tab-lifecycle.js"></script>
+    <script src="bootstrap.js"></script>
   </body>
 </html>

@@ -1,0 +1,56 @@
+/* Ready-countdown notification lifecycle. Loaded after the app coordinator. */
+
+async function initialiseReadyNotifications() {
+  const { readyNotificationsEnabled: enabled = true } = await chrome.storage.local.get('readyNotificationsEnabled');
+  if (enabled) await chrome.storage.local.set({ readyNotificationsEnabled: true });
+  readyNotificationsEnabled = enabled;
+  if (readyNotificationsToggle) readyNotificationsToggle.checked = enabled;
+  if (notificationStatus) notificationStatus.textContent = enabled ? 'Đang bật.' : 'Đang tắt.';
+  const headerIcon = document.querySelector('.brand-icon')?.currentSrc || document.querySelector('.brand-icon')?.src || '';
+  if (headerIcon) chrome.runtime.sendMessage({ type: 'SET_NOTIFICATION_HEADER_ICON', icon: headerIcon });
+}
+
+function readyNotificationEntry(card, when) {
+  const title = card?.querySelector('.crop-card-title')?.textContent?.trim() || 'Tiến trình';
+  const count = Number(card?.dataset.count || 1);
+  const prefix = count > 1 ? `${count} ${title}` : title;
+  const mapKeys = card?.dataset.mapKeys || card?.dataset.resource || title;
+  const icon = document.querySelector('.brand-icon')?.currentSrc || document.querySelector('.brand-icon')?.src || saltUpgradeIcon;
+  return { id: `${prefix}|${mapKeys}|${when}`, when, icon };
+}
+
+function syncReadyNotifications() {
+  const entries = Array.from(document.querySelectorAll('[data-countdown-target]'))
+    .map((element) => readyNotificationEntry(element.closest('.crop-card'), Number(element.dataset.countdownTarget)))
+    .filter((entry) => Number.isFinite(entry.when));
+  chrome.runtime.sendMessage({ type: 'SCHEDULE_READY_NOTIFICATIONS', entries });
+}
+
+async function notifyReadyNow(card, when) {
+  if (!readyNotificationsEnabled) return;
+  const entry = readyNotificationEntry(card, when);
+  if (sentReadyNotifications.has(entry.id)) return;
+  sentReadyNotifications.add(entry.id);
+  chrome.runtime.sendMessage({ type: 'CANCEL_READY_NOTIFICATION', id: entry.id });
+  try {
+    await chrome.notifications.create(`sfl-countdown-${Date.now()}`, {
+      type: 'basic', iconUrl: entry.icon, title: 'Sunflower Tools',
+      message: `${entry.id.split('|')[0]} đã sẵn sàng.`, priority: 2
+    });
+  } catch (error) { console.error('Không thể gửi thông báo hoàn tất:', error); }
+}
+
+readyNotificationsToggle?.addEventListener('change', async () => {
+  const enabled = readyNotificationsToggle.checked;
+  readyNotificationsEnabled = enabled;
+  if (notificationStatus) notificationStatus.textContent = enabled ? 'Đang gửi thông báo thử…' : 'Đang tắt.';
+  try {
+    if (enabled) await chrome.notifications.create({ type: 'basic', iconUrl: saltUpgradeIcon, title: 'Sunflower Tools', message: 'Thông báo sẵn sàng đã được bật.', priority: 2 });
+    chrome.runtime.sendMessage({ type: 'SET_READY_NOTIFICATIONS', enabled });
+    if (notificationStatus && enabled) notificationStatus.textContent = 'Chrome đã tạo thông báo thử.';
+  } catch (error) { if (notificationStatus) notificationStatus.textContent = `Lỗi thông báo: ${error.message || error}`; }
+  if (readyNotificationsToggle.checked) syncReadyNotifications();
+  else chrome.runtime.sendMessage({ type: 'SCHEDULE_READY_NOTIFICATIONS', entries: [] });
+});
+
+initialiseReadyNotifications();

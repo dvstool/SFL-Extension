@@ -1,0 +1,21 @@
+/* Crop card markup. This module owns crop-specific visual states and actions. */
+
+function cropCard(item, type) {
+  const isGrowing = type === 'growing';
+  const isEmpty = type === 'empty';
+  const isTornado = type === 'tornado';
+  const tier = isGrowing ? cropTiers.get(String(item.label || '').toLowerCase()) : '';
+  const stateLabel = isTornado ? 'Bị khóa' : isEmpty ? 'Đất trống' : isGrowing ? 'Đang hồi' : 'Sẵn sàng';
+  const hasCountdown = Number.isFinite(item.seconds) && item.seconds > 0;
+  const detail = isTornado ? '' : isGrowing ? hasCountdown ? `<span class="crop-card-meta">${countdownMarkup(item)}</span>` : '<span class="crop-card-meta">Đang cập nhật thời gian…</span>' : '';
+  const plantCount = Math.min(Number(item.count || 0), Math.max(0, Number(item.seedCount || 0)));
+  const plantLabel = `Trồng x${plantCount}`;
+  const action = isTornado ? '' : isEmpty ? (item.canPlant ? `<button type="button" data-ui-action="plant" data-selected-seed="${escapeHtml(item.seedName || '')}" data-target-fertiliser-type="${item.fertiliserType || 0}" data-action-label="${plantLabel}"${plantCount ? '' : ' disabled'}>${plantLabel}</button>` : '<button type="button" disabled>Chọn hạt trước</button>') : type === 'ready' ? '<button type="button" data-ui-action="harvest">Thu hoạch</button>' : item.fertilised ? '' : cropFertiliserIcons.map((icon, index) => `<button class="fertiliser-button" type="button" data-ui-action="fertilise" data-fertiliser-index="${index}" title="Bón phân ${index + 1}"><img src="${icon}" alt="Phân bón ${index + 1}" /><span>×${formatExactCount(fertiliserCounts.get(icon))}</span></button>`).join('');
+  if (isEmpty) return `<article class="crop-card is-empty" data-crop-name="${escapeHtml(item.label)}" data-fertiliser-type="${item.fertiliserType || 0}" data-map-keys="${escapeHtml((item.mapKeys || []).join('||'))}" data-count="${item.count}"><div class="crop-icon-box"><img class="crop-image" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${item.count}</b></div><div class="crop-card-content"><span class="crop-card-state">Đất trống</span><strong class="crop-card-title">${escapeHtml(item.label)}</strong></div><div class="crop-card-actions">${action}</div></article>`;
+  return `<article class="crop-card is-${type} ${type === 'ready' ? 'is-ready' : ''} ${isTornado ? 'is-tornado' : ''}" data-crop-name="${escapeHtml(item.label)}" data-fertiliser-type="${item.fertiliserType || 0}" data-time-group="${item.timeGroup ?? ''}" data-map-keys="${escapeHtml((item.mapKeys || []).join('||'))}" data-has-precise-seconds="${Boolean(item.hasPreciseSeconds)}" data-count="${item.count}">${tier ? `<b class="crop-tier">${tier}</b>` : ''}${item.fertilised ? `<img class="fertiliser-mark" src="${fertiliserIcon}" alt="Đã bón phân" />` : ''}${item.bee ? `<img class="bee-mark ${item.fertiliserType === 1 ? 'with-fertiliser' : ''}" src="${beeIcon}" alt="Bee" />` : ''}${item.fertiliserType === 2 ? '<img class="stopwatch-mark" src="https://sunflower-land.com/game-assets/icons/stopwatch.png" alt="Phân bón tăng tốc" />' : ''}${item.tornadoIcon ? `<img class="tornado-mark" src="${escapeHtml(item.tornadoIcon)}" alt="Tornado" />` : ''}<div class="crop-icon-box"><img class="crop-image" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${item.count}</b></div><div class="crop-card-content"><span class="crop-card-state">${stateLabel}</span><strong class="crop-card-title">${escapeHtml(item.label)}</strong>${detail}</div>${action ? `<div class="crop-card-actions">${action}</div>` : ''}</article>`;
+}
+
+function cropSeedCard(seed) {
+  const seedName = seed?.name || 'Chưa chọn hạt';
+  return `<article class="crop-card is-empty empty-seed-card overview-seed-card" data-ui-action="choose-seed"><div class="crop-icon-box">${seed?.icon ? `<img class="crop-image" src="${escapeHtml(seed.icon)}" alt="" />` : '<span class="empty-seed-placeholder">?</span>'}${seed?.icon ? `<b class="crop-quantity">×${getSeedCount(seed)}</b>` : ''}</div><div class="crop-card-content"><span class="crop-card-state">Hạt trồng</span><strong class="crop-card-title">Hạt trồng</strong><span class="crop-card-meta">${escapeHtml(seedName)}</span></div><span class="seed-card-select-overlay">Chọn hạt</span></article>`;
+}
