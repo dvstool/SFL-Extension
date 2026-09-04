@@ -80,6 +80,14 @@ h1 { margin: 0; font-size: 14px; line-height: 1.2; letter-spacing: -.15px; }.con
 #map-panel .crop-card:hover { box-shadow: 0 0 0 1px currentColor, 0 5px 13px rgba(0, 0, 0, .28); }
 #map-panel .empty-seed-card { border-color: #fbbf24; background: linear-gradient(135deg, #5d3d08, #1f2837); }.empty-seed-placeholder { display: grid; width: 35px; height: 35px; place-items: center; border: 1px dashed rgba(253, 230, 138, .7); border-radius: 5px; color: #fde68a; font-weight: 800; }
 
+/* Empty crop cards expose their actions only on hover, keeping the scan easy to read. */
+#map-panel .empty-crop-card { cursor: default; }
+.empty-crop-overlay { position: absolute; inset: 0; z-index: 3; display: grid; grid-template-columns: 1fr; border-radius: inherit; background: rgba(8, 122, 92, .88); opacity: 0; pointer-events: none; transition: opacity .14s ease; }
+.empty-crop-card:hover .empty-crop-overlay, .empty-crop-card:focus-within .empty-crop-overlay { opacity: 1; pointer-events: auto; }
+.empty-crop-plant { display: grid; place-items: center; min-width: 0; padding: 6px; border: 0; border-radius: inherit; color: #ecfff8; background: transparent; font-size: 12px; font-weight: 850; cursor: pointer; }
+.empty-crop-plant:not(:disabled):hover { background: rgba(6, 95, 70, .18); }
+.empty-crop-plant:disabled { color: rgba(236, 255, 248, .58); cursor: not-allowed; }
+
 /* Shop dùng cùng nhịp chữ, màu nền và viền với Map; card chỉ cao theo nội dung. */
 #map-panel .map-betty-results {
   gap: 6px;

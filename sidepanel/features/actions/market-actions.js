@@ -220,14 +220,16 @@ async function refreshPurchasedTool(category, slotIndex) {
       const workbenchPattern = /\/game-assets\/(?:[^/]+\/)*buildings\/(?:[^/]+\/)*workbench\.(?:webp|png)(?:[?#]|$)/i;
       const workbench = Array.from(document.querySelectorAll('img')).find((image) => workbenchPattern.test(image.currentSrc || image.src || ''));
       const target = workbench?.closest('.cursor-pointer') || workbench?.parentElement;
-      if (!target) return { error: 'Không tìm thấy Workbench trên map.' };
       const dialogs = () => Array.from(document.querySelectorAll('div.relative.max-h-\\[90vh\\]'));
-      const before = new Set(dialogs());
-      target.click();
-      let dialog;
-      for (let attempt = 0; attempt < 40 && !dialog; attempt += 1) {
-        dialog = dialogs().find((element) => !before.has(element) || /\b(?:Land|Water|Animal) Tools\b/i.test(element.innerText || ''));
-        if (!dialog) await sleep(15);
+      const isWorkbenchDialog = (element) => /\b(?:Land|Water|Animal) Tools\b/i.test(element.innerText || '');
+      let dialog = dialogs().find(isWorkbenchDialog);
+      if (!dialog) {
+        if (!target) return { error: 'Không tìm thấy Workbench trên map.' };
+        target.click();
+        for (let attempt = 0; attempt < 40 && !dialog; attempt += 1) {
+          dialog = dialogs().find(isWorkbenchDialog);
+          if (!dialog) await sleep(15);
+        }
       }
       if (!dialog) return { error: 'Không mở được Workbench.' };
       try {
@@ -262,9 +264,7 @@ async function refreshPurchasedTool(category, slotIndex) {
             disabledCraftOptions: craftButtons.filter((button) => button.disabled).map((button) => button.innerText.trim())
           }
         };
-      } finally {
-        dialog.querySelector('img[src*="/game-assets/icons/close.png"]')?.click();
-      }
+      } finally { /* Keep Workbench open while its panel tab remains active. */ }
     },
     args: [category, slotIndex]
   });
@@ -304,14 +304,16 @@ mapActivityContent.addEventListener('click', async (event) => {
         const workbenchPattern = /\/game-assets\/(?:[^/]+\/)*buildings\/(?:[^/]+\/)*workbench\.(?:webp|png)(?:[?#]|$)/i;
         const workbench = Array.from(document.querySelectorAll('img')).find((image) => workbenchPattern.test(image.currentSrc || image.src || ''));
         const target = workbench?.closest('.cursor-pointer') || workbench?.parentElement;
-        if (!target) return { error: 'Không tìm thấy Workbench trên map.' };
         const dialogs = () => Array.from(document.querySelectorAll('div.relative.max-h-\\[90vh\\]'));
-        const before = new Set(dialogs());
-        target.click();
-        let dialog;
-        for (let attempt = 0; attempt < 40 && !dialog; attempt += 1) {
-          dialog = dialogs().find((element) => !before.has(element) || /\b(?:Land|Water|Animal) Tools\b/i.test(element.innerText || ''));
-          if (!dialog) await sleep(15);
+        const isWorkbenchDialog = (element) => /\b(?:Land|Water|Animal) Tools\b/i.test(element.innerText || '');
+        let dialog = dialogs().find(isWorkbenchDialog);
+        if (!dialog) {
+          if (!target) return { error: 'Không tìm thấy Workbench trên map.' };
+          target.click();
+          for (let attempt = 0; attempt < 40 && !dialog; attempt += 1) {
+            dialog = dialogs().find(isWorkbenchDialog);
+            if (!dialog) await sleep(15);
+          }
         }
         if (!dialog) return { error: 'Không mở được Workbench.' };
         Array.from(dialog.querySelectorAll('button, div.cursor-pointer')).find((element) => element.textContent.trim() === 'Tools')?.click();
@@ -333,13 +335,11 @@ mapActivityContent.addEventListener('click', async (event) => {
             if (!confirmationButton) await sleep(15);
           }
           if (!confirmationButton) {
-            dialog.querySelector('img[src*="/game-assets/icons/close.png"]')?.click();
             return { error: `Không thấy hộp xác nhận ${requestedCraft}.` };
           }
           confirmationButton.click();
         }
         await sleep(180);
-        dialog.querySelector('img[src*="/game-assets/icons/close.png"]')?.click();
         return { crafted: true, amount: Number((requestedCraft.match(/\d+/) || ['1'])[0]) };
       },
       args: [category, slotIndex, craftLabel]
@@ -435,6 +435,9 @@ async function selectSeedForPlant(card, seedKind = 'crop') {
     } else log(`Không tìm thấy ${seedName} trên thanh chọn nhanh hoặc Betty.`);
   } catch (error) {
     log(error.message || 'Không thể chọn hạt trồng.');
+  } finally {
+    // Choosing a seed ends the picker flow, so Betty should not remain open on the crop/fruit tab.
+    if (typeof closeGameBuilding === 'function') await closeGameBuilding('market');
   }
 }
 

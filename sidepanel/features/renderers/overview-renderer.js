@@ -33,7 +33,7 @@ function renderOverview() {
   const hasFruitSoil = (data.fruit?.empty || []).length > 0;
   const hasFruit = Boolean((data.fruit?.empty?.length || 0) + (data.fruit?.ready?.length || 0) + (data.fruit?.growing?.length || 0) + (data.fruit?.dead?.length || 0));
   const cropCards = [
-    ...cropEmpty.map((item) => cropCard({ ...item, label: 'Đất Crop trống', canPlant: Boolean(cropSeed), seedName: cropSeed?.name || '', seedCount: getSeedCount(cropSeed) }, 'empty')),
+    ...cropEmpty.map((item) => cropCard({ ...item, label: 'Đất Crop trống', canPlant: Boolean(cropSeed), seedName: cropSeed?.name || '', seedIcon: cropSeed?.icon || '', seedCount: getSeedCount(cropSeed) }, 'empty')),
     ...(hasCropSoil ? [cropSeedCard(cropSeed)] : []),
     ...(data.ready || []).map((item) => cropCard(item, 'ready'))
   ];

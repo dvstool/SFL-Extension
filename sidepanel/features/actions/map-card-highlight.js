@@ -2,8 +2,26 @@
 
 let mapHighlightRequest = 0;
 const mapHighlightSession = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+let mapHoverHighlightsEnabled = true;
+
+async function clearMapCardHighlight() {
+  const request = ++mapHighlightRequest;
+  try {
+    await executeOnSunflowerTabs({
+      func: (requestedVersion, requestedSession) => {
+        const previousRequest = globalThis.__sunflowerToolsHighlightRequest || {};
+        if (previousRequest.session === requestedSession && requestedVersion < previousRequest.version) return;
+        globalThis.__sunflowerToolsHighlightRequest = { session: requestedSession, version: requestedVersion };
+        document.querySelectorAll('.sunflower-tools-panel-target-overlay').forEach((overlay) => overlay.remove());
+        document.querySelectorAll('.sunflower-tools-panel-target, .sunflower-tools-panel-target--desert').forEach((placement) => placement.classList.remove('sunflower-tools-panel-target', 'sunflower-tools-panel-target--desert'));
+      },
+      args: [request, mapHighlightSession]
+    });
+  } catch { /* Hover feedback is optional. */ }
+}
 
 async function setMapCardHighlight(mapKeys = []) {
+  if (!mapHoverHighlightsEnabled) return;
   const request = ++mapHighlightRequest;
   try {
     await executeOnSunflowerTabs({
@@ -111,3 +129,18 @@ mapActivityContent.addEventListener('pointerout', (event) => {
   if (!card || card.contains(event.relatedTarget)) return;
   void setMapCardHighlight();
 });
+
+async function initialiseMapHoverHighlights() {
+  const { mapHoverHighlightsEnabled: enabled = true } = await chrome.storage.local.get('mapHoverHighlightsEnabled');
+  mapHoverHighlightsEnabled = enabled;
+  if (mapHoverHighlightsToggle) mapHoverHighlightsToggle.checked = enabled;
+  if (!enabled) await clearMapCardHighlight();
+}
+
+mapHoverHighlightsToggle?.addEventListener('change', async () => {
+  mapHoverHighlightsEnabled = mapHoverHighlightsToggle.checked;
+  await chrome.storage.local.set({ mapHoverHighlightsEnabled });
+  if (!mapHoverHighlightsEnabled) await clearMapCardHighlight();
+});
+
+void initialiseMapHoverHighlights();

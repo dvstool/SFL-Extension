@@ -405,6 +405,7 @@ mapActivityContent.addEventListener('click', async (event) => {
       logActionError('Hãy chọn hạt tại card Chọn hạt trước khi trồng.');
       return;
     }
+    const requestedMapKeys = button.closest('.crop-card')?.dataset.mapKeys?.split('||').filter(Boolean) || [];
     button.disabled = true;
     button.textContent = 'Đang trồng…';
     const finishLog = startActionLog('Đang trồng…');
@@ -413,7 +414,7 @@ mapActivityContent.addEventListener('click', async (event) => {
       if (!tab?.id) throw new Error('Không tìm thấy tab Sunflower Land đang mở.');
       const [{ result }] = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: async (requestedFertiliserType, requestedSeedName) => {
+        func: async (requestedFertiliserType, requestedSeedName, requestedMapKeys) => {
           const soilSelector = 'img[src*="/game-assets/crops/soil2.png"]';
           const titleCase = (value) => value.replace(/[_-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
           const quickSlots = () => {
@@ -464,21 +465,19 @@ mapActivityContent.addEventListener('click', async (event) => {
             const sources = Array.from(placement.querySelectorAll('img')).map((image) => image.currentSrc || image.src || '');
             return sources.some((source) => source.includes('/icons/stopwatch.png')) ? 2 : sources.some((source) => source.startsWith('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAN')) ? 1 : 0;
           };
+          const requestedKeys = new Set(requestedMapKeys || []);
+          const cropSoilTarget = (placement) => Array.from(placement.querySelectorAll('div')).find((element) => element.classList.contains('cursor-pointer') && element.classList.contains('hover:img-highlight') && element.querySelector(soilSelector));
           const targets = Array.from(document.querySelectorAll('div[data-map-placement="true"]')).map((placement) => {
-            const first = placement.firstElementChild;
-            const second = first?.firstElementChild;
-            const third = second?.firstElementChild;
-            const cropSoil = third?.classList.contains('cursor-pointer') && third.classList.contains('hover:img-highlight') && third.querySelector(soilSelector);
-            return cropSoil ? { key: `${placement.style.top}|${placement.style.left}`, target: third, fertiliserType: getFertiliserType(placement) } : null;
-          }).filter((item) => item && item.fertiliserType === requestedFertiliserType).slice(0, seedCount);
+            const key = `${placement.style.top}|${placement.style.left}`;
+            const target = cropSoilTarget(placement);
+            return target ? { key, target, fertiliserType: getFertiliserType(placement) } : null;
+          }).filter((item) => item && (requestedKeys.size ? requestedKeys.has(item.key) : item.fertiliserType === requestedFertiliserType)).slice(0, seedCount);
           globalThis.__sunflowerToolsPlanting = true;
           globalThis.__sunflowerToolsIgnoreMapMutationsUntil = Date.now() + Math.max(4000, targets.length * 95 + 2000);
           try {
             for (const targetInfo of targets) {
               const placement = Array.from(document.querySelectorAll('div[data-map-placement="true"]')).find((item) => `${item.style.top}|${item.style.left}` === targetInfo.key);
-              const first = placement?.firstElementChild;
-              const second = first?.firstElementChild;
-              const currentTarget = second?.firstElementChild;
+              const currentTarget = placement && cropSoilTarget(placement);
               if (!currentTarget) continue;
               currentTarget.click();
               await new Promise((resolve) => setTimeout(resolve, 60));
@@ -516,6 +515,20 @@ mapActivityContent.addEventListener('click', async (event) => {
             plantedTargets.push(targetInfo);
             const tooltipTime = Array.from(placement.querySelectorAll('div.transition-opacity span.font-secondary')).map((element) => element.textContent.trim()).find((text) => /^\d+\s*(?:day|d|hr|h|min|m|sec|s)/i.test(text)) || '';
             const timerText = Array.from(placement.querySelectorAll('span.text-white.text-center.font-pixel')).map((element) => element.textContent.trim()).find((text) => /\d+\s*(?:d|h|m|s)/i.test(text)) || '';
+            const time = parseSeconds(tooltipTime || timerText);
+            plantedEntries.push({
+              label: titleCase(match[1]),
+              icon: image.currentSrc || image.src,
+              count: 1,
+              fertilised: targetInfo.fertiliserType > 0,
+              fertiliserType: targetInfo.fertiliserType,
+              bee: false,
+              stage: match[2],
+              seconds: time.seconds,
+              timeGroup: time.seconds ?? 'unknown',
+              hasPreciseSeconds: time.hasSeconds,
+              mapKeys: [targetInfo.key]
+            });
           });
           const plantedGroups = [];
           plantedEntries.sort((left, right) => (right.seconds || 0) - (left.seconds || 0)).forEach((entry) => {
@@ -529,7 +542,7 @@ mapActivityContent.addEventListener('click', async (event) => {
           plantedTargets.forEach(({ fertiliserType }) => emptyByType.set(fertiliserType, (emptyByType.get(fertiliserType) || 0) + 1));
           return { clicked: plantedTargets.length, emptyCounts: Array.from(emptyByType, ([fertiliserType, count]) => ({ fertiliserType, count })), growing: plantedGroups, seedName: seedMatch ? titleCase(seedMatch[1]) : 'Hạt giống', remainingSeeds: Math.max(0, seedCount - plantedTargets.length) };
         },
-        args: [Number(button.dataset.targetFertiliserType || 0), button.dataset.selectedSeed || '']
+        args: [Number(button.dataset.targetFertiliserType || 0), button.dataset.selectedSeed || '', requestedMapKeys]
       });
       if (result.error) throw new Error(result.error);
       if (!result.clicked) logActionError('Không tìm thấy ô Crop trống thuộc nhóm đã chọn.');
