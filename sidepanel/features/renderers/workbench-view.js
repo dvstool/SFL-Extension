@@ -7,7 +7,7 @@ function renderWorkbench(scan = lastToolsScan) {
     workbenchResults.innerHTML = '<div class="empty-state">Chưa quét Tools. Mở Workbench rồi bấm Quét Tools.</div>';
     return;
   }
-  const categories = ['Land Tools', 'Water Tools', 'Animal Tools'];
+  const categories = ['Land Tools', 'Water Tools'];
   workbenchResults.innerHTML = categories.map((category) => {
     const tools = items.filter((item) => item.category === category);
     if (!tools.length) return '';
@@ -58,10 +58,10 @@ function toolBuyLabel(option) {
 function overviewToolCard(name, icon, count, category = 'Craft') {
   const item = lastToolsScan?.items.find((entry) => entry.icon === icon);
   if (!item) return `<article class="shop-card overview-tool-card"><b class="shop-tier tool-card-label">TOOL</b><div class="shop-icon-box"><img class="shop-item-icon" src="${escapeHtml(icon)}" alt="" /><b class="crop-quantity">×${escapeHtml(count)}</b></div><div class="shop-card-content"><strong>${escapeHtml(name)}</strong></div><div class="shop-buy-actions scan-tools-actions"><button type="button" data-ui-action="scan-tools">Quét Tools</button></div></article>`;
-  const stock = item.soldOut ? 'Stock: 0' : item.stockText || `×${item.count}`;
+  const stock = item.soldOut ? 'Stock: 0' : item.stockText || '';
   const hasMissingRequirement = (item.requirements || []).some(toolRequirementMissing);
   const actions = !item.soldOut ? (item.craftOptions || []).map((option) => `<span class="craft-action"><button type="button" data-tool-craft="${escapeHtml(option)}"${toolCanCraft(item, option) ? '' : ' class="is-insufficient" disabled'}>${escapeHtml(toolBuyLabel(option))}</button>${toolCraftTooltip(item, option)}</span>`).join('') : '';
-  return `<article class="shop-card tool-shop-card overview-tool-card ${item.soldOut || hasMissingRequirement ? 'is-unavailable' : ''} ${item.soldOut ? 'is-sold-out' : ''}" data-tool-category="${escapeHtml(item.category)}" data-tool-slot-index="${item.slotIndex}"><b class="shop-tier tool-card-label">TOOL</b><div class="shop-icon-box"><img class="shop-item-icon" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${escapeHtml(item.count)}</b></div><div class="shop-card-content"><strong>${escapeHtml(item.name)}</strong><div class="shop-card-meta"><span>${escapeHtml(stock)}</span>${item.soldOut ? '<span class="tool-sold-out">Sold out</span>' : ''}</div></div>${actions ? `<div class="shop-buy-actions">${actions}</div>` : ''}</article>`;
+  return `<article class="shop-card tool-shop-card overview-tool-card ${item.soldOut || hasMissingRequirement ? 'is-unavailable' : ''} ${item.soldOut ? 'is-sold-out' : ''}" data-tool-category="${escapeHtml(item.category)}" data-tool-slot-index="${item.slotIndex}"><b class="shop-tier tool-card-label">TOOL</b><div class="shop-icon-box"><img class="shop-item-icon" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${escapeHtml(item.count)}</b></div><div class="shop-card-content"><strong>${escapeHtml(item.name)}</strong>${stock || item.soldOut ? `<div class="shop-card-meta">${stock ? `<span>${escapeHtml(stock)}</span>` : ''}${item.soldOut ? '<span class="tool-sold-out">Sold out</span>' : ''}</div>` : ''}</div>${actions ? `<div class="shop-buy-actions">${actions}</div>` : ''}</article>`;
 }
 
 function renderToolsScan(scan) {
@@ -83,6 +83,18 @@ function pickaxeSource(resource) {
   if (sourceMatch) return sourceMatch;
   const wantedName = String(tool.name || '').replace(/[^a-z]/gi, '').toLowerCase();
   return lastToolsScan?.items.find((item) => String(item.name || '').replace(/[^a-z]/gi, '').toLowerCase() === wantedName)?.icon || '';
+}
+
+function resourceToolBadge(source, fallback, name, count, state = '') {
+  const icon = source || fallback || '';
+  const normalizedName = String(name || '').replace(/[^a-z]/gi, '').toLowerCase();
+  const item = lastToolsScan?.items.find((entry) => entry.icon === icon)
+    || lastToolsScan?.items.find((entry) => String(entry.name || '').replace(/[^a-z]/gi, '').toLowerCase() === normalizedName);
+  const buyAttributes = item && item.category && Number.isInteger(Number(item.slotIndex))
+    ? `data-tool-category="${escapeHtml(item.category)}" data-tool-slot-index="${escapeHtml(item.slotIndex)}"`
+    : `data-tool-icon="${escapeHtml(icon)}" data-tool-name="${escapeHtml(name)}"`;
+  const buy = `<button class="resource-tool-buy" type="button" data-ui-action="open-resource-tool" ${buyAttributes}>Buy</button>`;
+  return `<span class="resource-tool-count${state}" title="${escapeHtml(name)} ×${escapeHtml(count)}"><img src="${escapeHtml(icon)}" alt="" /><b>×${escapeHtml(count)}</b>${buy}</span>`;
 }
 
 function updateToolCount(icon, count) {

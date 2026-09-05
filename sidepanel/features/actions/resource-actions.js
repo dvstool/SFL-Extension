@@ -11,6 +11,11 @@ async function chopTrees(card) {
     target: { tabId: tab.id },
     func: async (keys, axeLimit, axeSource) => {
       const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+      const readCount = (value) => {
+        const match = String(value || '').replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*(k)?\b/i);
+        const amount = Number.parseFloat(match?.[1] || '0');
+        return Number.isFinite(amount) ? Math.floor(amount * (match?.[2] ? 1000 : 1)) : null;
+      };
       const isReadyTree = (placement) => Array.from(placement.querySelectorAll('img')).some((image) => /\/game-assets\/resources\/tree\/[^/]+\/[^/]+_([^/]+)_(?:tree|trees_shake_sheet)\.webp/i.test(image.currentSrc || image.src || '')) || Array.from(placement.querySelectorAll('[style*="background-image"]')).some((element) => /\/game-assets\/resources\/tree\/[^/]+\/[^/]+_([^/]+)_trees_shake_sheet\.webp/i.test(element.style.backgroundImage || ''));
       const quickColumn = Array.from(document.querySelectorAll('div.flex.flex-col.items-center')).find((column) => Array.from(column.children).filter((child) => child.classList.contains('relative') && child.querySelector('.bg-brown-600 img[alt="item"]')).length >= 3);
       const axeSlot = quickColumn && Array.from(quickColumn.children).find((slot) => {
@@ -47,11 +52,16 @@ async function chopTrees(card) {
         processed += 1;
         await sleep(60);
       }
-      return { processed, felled, felledKeys, axeUsed, hitsPerTree: hitsPerTree || 1 };
+      // The game selects Axe automatically while chopping. Read that quick
+      // slot after the action so the panel has the authoritative stack count.
+      await sleep(120);
+      return { processed, felled, felledKeys, axeUsed, remainingAxes: axeSlot ? readCount(axeSlot.textContent) : null, hitsPerTree: hitsPerTree || 1 };
     },
     args: [mapKeys, Number.isFinite(knownAxes) ? knownAxes : null, axeIcon]
   });
-  if (Number.isFinite(knownAxes)) updateToolCount(axeIcon, knownAxes - result.felled);
+  // Prefer the game's quick-slot count; fall back to one Axe per felled tree.
+  if (Number.isFinite(result?.remainingAxes)) updateToolCount(axeIcon, result.remainingAxes);
+  else if (Number.isFinite(knownAxes)) updateToolCount(axeIcon, knownAxes - result.felled);
   return result;
 }
 

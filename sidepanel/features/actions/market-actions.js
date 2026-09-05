@@ -2,7 +2,7 @@
 
 scanBettyButton.addEventListener('click', async () => {
   scanBettyButton.disabled = true;
-  scanBettyButton.textContent = 'Đang quét Betty…';
+  scanBettyButton.classList.add('is-scanning');
   const finishLog = startActionLog('Đang quét Betty…');
   try {
     const [{ result }] = await executeOnSunflowerTabs({
@@ -104,15 +104,13 @@ scanBettyButton.addEventListener('click', async () => {
   } finally {
     finishLog();
     scanBettyButton.disabled = false;
-    scanBettyButton.textContent = 'Quét Betty';
+    scanBettyButton.classList.remove('is-scanning');
   }
 });
 
 scanToolsButton.addEventListener('click', async () => {
-  const label = scanToolsButton.querySelector('span:last-child');
   scanToolsButton.disabled = true;
   scanToolsButton.classList.add('is-scanning');
-  if (label) label.textContent = 'Đang quét…';
   const finishLog = startActionLog('Đang quét Tools…');
   try {
     const [{ result }] = await executeOnSunflowerTabs({
@@ -139,7 +137,7 @@ scanToolsButton.addEventListener('click', async () => {
         if (!dialog) return { error: 'Không mở được cửa sổ Workbench.' };
         const toolsTab = Array.from(dialog.querySelectorAll('button, div.cursor-pointer')).find((element) => element.textContent.trim() === 'Tools');
         toolsTab?.click();
-        const categories = ['Land Tools', 'Water Tools', 'Animal Tools'];
+        const categories = ['Land Tools', 'Water Tools'];
         await waitFor(() => categories.some((category) => Array.from(dialog.querySelectorAll('div')).some((element) => element.textContent.trim() === category)), 350);
         const readCount = (slot) => {
           const text = (slot.parentElement?.innerText || slot.parentElement?.textContent || slot.textContent || '').replace(/,/g, '').toLowerCase();
@@ -153,23 +151,17 @@ scanToolsButton.addEventListener('click', async () => {
         };
         const readSelectedDetails = async () => {
           const detail = Array.from(dialog.querySelectorAll('div')).find((element) => element.classList.contains('sm:w-2/5'));
-          let ingredientPanel = detail?.querySelector('#ingredients-info-panel');
-          if (!ingredientPanel) {
-            const ingredientTrigger = Array.from(detail?.querySelectorAll('div.relative.cursor-pointer') || []).find((element) => /\d[\d,.]*\s*\/\s*\d[\d,.]*/.test(element.innerText || ''));
-            ingredientTrigger?.click();
-            await sleep(40);
-            ingredientPanel = detail?.querySelector('#ingredients-info-panel');
-          }
-          const ingredientNames = new Map(Array.from(ingredientPanel?.querySelectorAll('img[alt]') || []).map((image) => [image.currentSrc || image.src || '', image.alt.trim()]));
-          const candidates = Array.from(detail?.querySelectorAll('p, span') || []).map((element) => element.textContent.trim()).filter((text) => text && !/^(Tools|Land Tools|Water Tools|Animal Tools|Buy|Sell|Guide|Craft)$/i.test(text) && !/^\d/.test(text));
-          const name = candidates.find((text) => /(?:Axe|Pickaxe|Rod|Hammer|Saw|Scythe|Drill|Hoe|Pot|Rake|Tool)/i.test(text)) || candidates[0] || '';
-          const text = detail?.innerText || '';
+          const detailText = detail?.innerText || '';
+          const detailLines = detailText.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !/^(?:Tools|Land Tools|Water Tools|Buy|Sell|Guide|Craft(?:\s+\d+)?|Ingredients:|Batch Buy|Sold out)$/i.test(line) && !/^\d[\d,.]*\s+in stock$/i.test(line) && !/^(?:Used to|Max \d|Not enough|Requires)/i.test(line) && !/^\d[\d,.]*\s*\/\s*\d[\d,.]*/.test(line));
+          const candidates = Array.from(detail?.querySelectorAll('p, span') || []).map((element) => element.textContent.trim()).filter((text) => text && !/^(Tools|Land Tools|Water Tools|Buy|Sell|Guide|Craft)$/i.test(text) && !/^\d/.test(text));
+          const name = detailLines[0] || candidates.find((text) => /(?:Axe|Pickaxe|Rod|Hammer|Saw|Scythe|Drill|Hoe|Pot|Rake|Tool)/i.test(text)) || candidates[0] || '';
+          const text = detailText;
           const stockText = (text.match(/(?:\d[\d,.]*\s+in stock|Sold out)/i) || [''])[0];
           const soldOut = /Sold out/i.test(stockText);
           const requirementRows = Array.from(detail?.querySelectorAll('div.flex.justify-between.min-h-\\[26px\\]') || []);
           const requirements = requirementRows.map((row) => {
             const icon = row.querySelector('img[alt="item"]')?.currentSrc || row.querySelector('img[alt="item"]')?.src || '';
-            return { icon, name: ingredientNames.get(icon) || '', text: row.innerText.trim() };
+            return { icon, name: '', text: row.innerText.trim() };
           }).filter((entry) => entry.text);
           const craftButtons = Array.from(detail?.querySelectorAll('button') || []).filter((button) => /^Craft\s+\d+$/i.test(button.innerText.trim()));
           const craftOptions = craftButtons.map((button) => button.innerText.trim());
@@ -188,24 +180,17 @@ scanToolsButton.addEventListener('click', async () => {
             const image = slot.querySelector('img[alt="item"]');
             const icon = image.currentSrc || image.src;
             slot.click();
-            // The Workbench keeps the previous tool's panel visible briefly.
-            // Wait for the selected tool image before reading its name.
             await waitFor(() => {
               const detail = Array.from(dialog.querySelectorAll('div')).find((element) => element.classList.contains('sm:w-2/5'));
               return Array.from(detail?.querySelectorAll('img') || []).some((detailImage) => (detailImage.currentSrc || detailImage.src || '') === icon);
             }, 700);
             await sleep(45);
             const details = await readSelectedDetails();
-            const name = details.name || fallbackName(icon);
-            // “N in stock” is the Workbench shop/crafting stock, not the
-            // player's inventory. Inventory is shown only on the tool-slot badge.
             const count = readCount(slot);
-            if (!items.some((item) => item.icon === icon)) items.push({ ...details, name, icon, count, category, slotIndex });
+            if (!items.some((item) => item.icon === icon)) items.push({ ...details, name: details.name || fallbackName(icon), icon, count, category, slotIndex });
           }
         }
-        const closeButton = dialog.querySelector('img[src*="/game-assets/icons/close.png"]');
-        closeButton?.click();
-        return { items, closed: Boolean(closeButton) };
+        return { items };
       }
     });
     if (result?.error) throw new Error(result.error);
@@ -216,9 +201,49 @@ scanToolsButton.addEventListener('click', async () => {
     finishLog();
     scanToolsButton.disabled = false;
     scanToolsButton.classList.remove('is-scanning');
-    if (label) label.textContent = 'Tools';
   }
 });
+
+async function loadWorkbenchToolSummaries() {
+  const [{ result }] = await executeOnSunflowerTabs({
+    func: async () => {
+      const sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+      const dialogs = () => Array.from(document.querySelectorAll('div.relative.max-h-\\[90vh\\]'));
+      const isWorkbenchDialog = (element) => /\b(?:Land|Water|Animal) Tools\b/i.test(element?.innerText || '');
+      let dialog = dialogs().find(isWorkbenchDialog);
+      for (let attempt = 0; !dialog && attempt < 50; attempt += 1) {
+        await sleep(30);
+        dialog = dialogs().find(isWorkbenchDialog);
+      }
+      if (!dialog) return { error: 'Không mở được Workbench.' };
+      Array.from(dialog.querySelectorAll('button, div.cursor-pointer')).find((element) => element.textContent.trim() === 'Tools')?.click();
+      await sleep(80);
+      const readCount = (slot) => {
+        const text = (slot.parentElement?.innerText || slot.parentElement?.textContent || slot.textContent || '').replace(/,/g, '').toLowerCase();
+        const match = text.match(/\d+(?:\.\d+)?\s*k?/);
+        const number = Number.parseFloat(match?.[0] || '0');
+        return Number.isFinite(number) ? Math.round(number * (String(match?.[0] || '').includes('k') ? 1000 : 1)) : 0;
+      };
+      const fallbackName = (icon) => (icon.split('/').pop()?.split(/[?#]/)[0] || 'Tool').replace(/\.(png|webp)$/i, '').replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+      const categories = ['Land Tools', 'Water Tools'];
+      const items = [];
+      categories.forEach((category) => {
+        const heading = Array.from(dialog.querySelectorAll('div')).find((element) => element.textContent.trim() === category);
+        const slots = Array.from(heading?.nextElementSibling?.querySelectorAll('.bg-brown-600, .bg-brown-700') || []).filter((slot) => slot.querySelector('img[alt="item"]'));
+        slots.forEach((slot, slotIndex) => {
+          const image = slot.querySelector('img[alt="item"]');
+          const icon = image?.currentSrc || image?.src || '';
+          const name = image?.alt?.trim();
+          if (icon) items.push({ name: !name || /^item$/i.test(name) ? fallbackName(icon) : name, icon, count: readCount(slot), category, slotIndex, craftOptions: [], requirements: [] });
+        });
+      });
+      return { items };
+    }
+  });
+  if (result?.error) throw new Error(result.error);
+  if (result?.items?.length) renderToolsScan(result);
+  return result?.items || [];
+}
 
 async function refreshPurchasedTool(category, slotIndex) {
   const [{ result }] = await executeOnSunflowerTabs({
@@ -250,6 +275,7 @@ async function refreshPurchasedTool(category, slotIndex) {
         await sleep(40);
         const detail = Array.from(dialog.querySelectorAll('div')).find((element) => element.classList.contains('sm:w-2/5'));
         const text = detail?.innerText || '';
+        const name = text.split(/\r?\n/).map((line) => line.trim()).find((line) => line && !/^(?:Tools|Land Tools|Water Tools|Buy|Sell|Guide|Craft(?:\s+\d+)?|Ingredients:|Batch Buy|Sold out)$/i.test(line) && !/^\d[\d,.]*\s+in stock$/i.test(line) && !/^(?:Used to|Max \d|Not enough|Requires)/i.test(line) && !/^\d[\d,.]*\s*\/\s*\d[\d,.]*/.test(line)) || '';
         const stockText = (text.match(/(?:\d[\d,.]*\s+in stock|Sold out)/i) || [''])[0];
         const craftButtons = Array.from(detail?.querySelectorAll('button') || []).filter((button) => /^Craft\s+\d+$/i.test(button.innerText.trim()));
         const requirementRows = Array.from(detail?.querySelectorAll('div.flex.justify-between.min-h-\\[26px\\]') || []);
@@ -262,6 +288,7 @@ async function refreshPurchasedTool(category, slotIndex) {
         const icon = slot.querySelector('img[alt="item"]')?.currentSrc || slot.querySelector('img[alt="item"]')?.src || '';
         return {
           item: {
+            name,
             icon,
             count: readCount(slot),
             stockText,

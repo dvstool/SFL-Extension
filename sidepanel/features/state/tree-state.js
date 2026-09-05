@@ -2,7 +2,7 @@
 
 function scheduleTreeRefresh() {
   window.clearTimeout(treeRefreshTimer);
-  treeRefreshTimer = window.setTimeout(() => scanMap(), 700);
+  treeRefreshTimer = window.setTimeout(() => scanMap('tree'), 700);
 }
 
 async function readTreeStates(mapKeys = []) {

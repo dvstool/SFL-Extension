@@ -40,10 +40,10 @@ function treeCard(item, type) {
   const hasCountdown = growing && Number.isFinite(item.seconds) && item.seconds > 0;
   const axeCount = toolBagScanned ? (toolCounts.get(axeIcon) ?? 0) : '—';
   const treeCount = Number(item.count || 0);
-  const maxChops = Number.isFinite(Number(axeCount)) ? Math.min(treeCount, Math.max(0, Number(axeCount))) : treeCount;
-  const action = growing ? '' : !toolBagScanned ? '<div class="crop-card-actions"><button type="button" data-ui-action="scan-tools">Quét Tools</button></div>' : `<div class="crop-card-actions"><button type="button" data-ui-action="chop" data-action-label="Chặt x${maxChops}"${maxChops ? '' : ' disabled'}>Chặt x${maxChops}</button></div>`;
+  const maxChops = toolBagScanned && Number.isFinite(Number(axeCount)) ? Math.min(treeCount, Math.max(0, Number(axeCount))) : 0;
+  const action = growing ? '' : `<div class="crop-card-actions"><button type="button" data-ui-action="chop" data-action-label="Chặt x${maxChops}"${maxChops ? '' : ' disabled'}>${maxChops ? `Chặt x${maxChops}` : 'Cần Axe'}</button></div>`;
   const toolBadgeState = toolBagScanned && !Number(axeCount) ? ' is-empty' : toolBagScanned ? '' : ' is-unscanned';
-  const toolBadge = `<span class="resource-tool-count${toolBadgeState}" title="Axe ×${escapeHtml(axeCount)}"><img src="${escapeHtml(axeIcon)}" alt="" /><b>×${escapeHtml(axeCount)}</b></span>`;
+  const toolBadge = resourceToolBadge(axeIcon, axeIcon, 'Axe', axeCount, toolBadgeState);
   const detail = growing ? (hasCountdown ? countdownMarkup(item) : 'Đang cập nhật thời gian…') : '';
   return `<article class="crop-card tree-card is-${growing ? 'growing' : 'ready'} ${growing ? '' : 'is-ready'}" data-resource="tree" data-map-keys="${escapeHtml((item.mapKeys || []).join('||'))}" data-count="${item.count}"><div class="crop-icon-box"><img class="crop-image" src="${escapeHtml(item.icon)}" alt="Tree" /><b class="crop-quantity">×${item.count}</b></div><div class="crop-card-content"><span class="crop-card-state">${growing ? 'Đang hồi' : 'Sẵn sàng'}</span><strong class="crop-card-title">Tree</strong>${detail ? `<span class="crop-card-meta">${detail}</span>` : ''}</div>${toolBadge}${action}</article>`;
 }

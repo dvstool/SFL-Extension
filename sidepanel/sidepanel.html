@@ -17,7 +17,7 @@
           </div>
           <div class="header-actions">
             <p class="connection is-disconnected" id="connection-status"><span></span> Chưa kết nối Sunflower Land</p>
-            <button class="header-icon-button" id="open-settings" type="button" title="Cài đặt" aria-label="Mở cài đặt">⚙</button>
+            <button class="header-icon-button" id="open-settings" type="button" title="Cài đặt" aria-label="Mở cài đặt"><img class="header-action-icon settings-action-icon" src="https://cdn-icons-png.flaticon.com/512/9251/9251448.png" alt="" /></button>
             <button class="reload-extension-button" id="reload-extension" type="button" title="Reload extension" aria-label="Reload extension">↻</button>
           </div>
         </div>
@@ -30,18 +30,20 @@
         <div id="connected-content" hidden>
         <section class="tool-tab-panel" id="map-panel" data-tool-panel="map">
           <div class="map-sticky-controls">
+            <nav class="map-activity-tabs" role="tablist" aria-label="Nghề trên Map"><button class="map-activity-tab is-active" type="button" role="tab" aria-selected="true" data-map-activity-tab="overview">Tổng quan</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="market">Betty Market</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="workbench">Workbench</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="auto">Auto</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="cheer">Cheer</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="seeds" hidden>Hạt</button></nav>
+            <div class="map-scan-card"><div class="test-actions"><button class="scan-map-button" id="scan-map" type="button" title="Quét Map" aria-label="Quét Map"><span class="scan-icon" aria-hidden="true"><img class="scan-icon-static" src="https://cdn-icons-png.flaticon.com/512/159/159061.png" alt="" /><img class="scan-icon-loading" src="https://assets-v2.lottiefiles.com/a/2e38d784-116e-11ee-95a0-ff83a71694af/KTpQk2gMhQ.gif" alt="" /></span><span>Map</span></button></div><button id="scan-fertilisers" type="button" hidden aria-hidden="true" tabindex="-1"></button></div>
             <div class="map-summary">
               <div class="land-info" id="land-info" aria-live="polite">Đang đọc thông tin land…</div>
             </div>
-            <div class="map-scan-card"><div class="test-actions"><button class="scan-map-button" id="scan-map" type="button" title="Quét Map" aria-label="Quét Map"><span class="scan-icon" aria-hidden="true">⟳</span><span>Map</span></button><button class="scan-map-button" id="scan-fertilisers" type="button" title="Quét túi đồ" aria-label="Quét túi đồ"><span class="scan-icon" aria-hidden="true">⟳</span><span>Túi</span></button></div></div>
           </div>
           <section class="map-tools">
-            <nav class="map-activity-tabs" role="tablist" aria-label="Nghề trên Map"><button class="map-activity-tab is-active" type="button" role="tab" aria-selected="true" data-map-activity-tab="overview">Tổng quan</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="market">Betty Market</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="workbench">Workbench</button><button class="map-activity-tab" type="button" role="tab" aria-selected="false" data-map-activity-tab="seeds" hidden>Hạt</button></nav>
             <div class="map-activity-content" id="map-activity-content">
               <div class="activity-results" id="ready-results"><div class="tree-results" id="overview-results"><div class="empty-state" data-activity="overview">Chưa quét map.</div></div><div class="crop-results" id="crop-results"><div class="empty-state">Chưa quét map.</div></div><div class="tree-results" id="tree-results"></div><div class="tree-results" id="mining-results"></div></div>
               <div class="activity-results activity-results-growing" id="growing-results"><div class="crop-results" id="crop-growing-results"></div><div class="tree-results" id="tree-growing-results"></div><div class="tree-results" id="mining-growing-results"></div></div>
-              <section class="market-tab-content" id="market-tab-content" hidden><div class="tab-scan-action"><button class="scan-map-button" id="scan-betty" type="button"><span class="scan-icon" aria-hidden="true">⟳</span><span>Quét Betty</span></button></div><div class="shop-results map-betty-results" id="shop-results"></div></section>
-              <section class="workbench-tab-content" id="workbench-tab-content" hidden><div class="tab-scan-action"><button class="scan-map-button" id="scan-tools" type="button"><span class="scan-icon" aria-hidden="true">⟳</span><span>Quét Tools</span></button></div><div class="shop-results map-workbench-results" id="workbench-results"></div></section>
+              <section class="market-tab-content" id="market-tab-content" hidden><div class="tab-scan-action"><button class="scan-map-button" id="scan-betty" type="button"><span class="scan-icon" aria-hidden="true"><img class="scan-icon-static" src="https://cdn-icons-png.flaticon.com/512/159/159061.png" alt="" /><img class="scan-icon-loading" src="https://assets-v2.lottiefiles.com/a/2e38d784-116e-11ee-95a0-ff83a71694af/KTpQk2gMhQ.gif" alt="" /></span><span>Quét Betty</span></button></div><div class="shop-results map-betty-results" id="shop-results"></div></section>
+              <section class="workbench-tab-content" id="workbench-tab-content" hidden><div class="tab-scan-action"><button class="scan-map-button" id="scan-tools" type="button"><span class="scan-icon" aria-hidden="true"><img class="scan-icon-static" src="https://cdn-icons-png.flaticon.com/512/159/159061.png" alt="" /><img class="scan-icon-loading" src="https://assets-v2.lottiefiles.com/a/2e38d784-116e-11ee-95a0-ff83a71694af/KTpQk2gMhQ.gif" alt="" /></span><span>Quét Tools</span></button></div><div class="shop-results map-workbench-results" id="workbench-results"></div></section>
+              <section class="activity-group auto-tab-content" data-activity="auto" hidden><div id="auto-crop-panel"></div></section>
+              <section class="activity-group cheer-tab-content" data-activity="cheer" hidden><div class="cheer-results" id="cheer-results"><div class="empty-state">Mở tab Cheer để xem Following.</div></div></section>
               <section class="activity-group seed-picker-panel" data-activity="seeds" hidden><div class="seed-picker-results" id="seed-picker-results"></div></section>
               <div class="activity-results activity-results-blocked" id="blocked-results"></div>
             </div>
@@ -95,6 +97,8 @@
     <script src="features/actions/overview-actions.js"></script>
     <script src="features/actions/map-card-highlight.js"></script>
     <script src="features/actions/market-tab-lifecycle.js"></script>
+    <script src="features/actions/auto-crop-actions.js"></script>
+    <script src="features/actions/cheer-actions.js"></script>
     <script src="bootstrap.js"></script>
   </body>
 </html>

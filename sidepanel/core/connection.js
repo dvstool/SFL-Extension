@@ -68,7 +68,7 @@ async function refreshConnection() {
     if (Number.isFinite(scannedCoins)) setCurrentCoins(scannedCoins);
     const balanceItem = (label, balance) => balance?.value ? `<span class="land-balance"><b>${escapeHtml(balance.value)}</b>${balance.icon ? `<img src="${escapeHtml(balance.icon)}" alt="${label}" />` : label}</span>` : '';
     landInfo.innerHTML = landName ? `<div class="land-details land-info-card"><strong><img class="land-thumbnail" src="${image}" alt="Land" />${landName}</strong>${displayedSeason ? `<span><img class="season-icon" src="${seasonIcon}" alt="Season" />${titleCase(displayedSeason)}</span>` : ''}</div><div class="land-balances land-balance-card">${balanceItem('Coins', balances.coins)}${balanceItem('Gems', balances.gems)}${balanceItem('FLW', balances.flw)}</div>` : 'Không tìm thấy thông tin land.';
-    if (lastToolsScan) renderOverview();
+    if (lastScanData) renderOverview();
     return true;
   } catch {
     renderConnection(null);

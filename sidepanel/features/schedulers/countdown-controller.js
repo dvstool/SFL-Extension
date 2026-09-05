@@ -74,7 +74,7 @@ function startCountdowns() {
       if (!card || card.classList.contains('is-ready')) return;
       notifyReadyNow(card, Number(element.dataset.countdownTarget));
       if (card.dataset.resource === 'composter') promoteGrowingComposter(card);
-      else if (card.dataset.resource === 'tree') { promoteGrowingTree(card); scheduleTreeRefresh(); log('Tree đã sẵn sàng chặt, đang cập nhật…'); }
+      else if (card.dataset.resource === 'tree') { promoteGrowingTree(card); if (!window.autoTreeAutomationRunning) scheduleTreeRefresh(); log('Tree đã sẵn sàng chặt, đang cập nhật…'); }
       else if (card.dataset.resource === 'mining') { card.querySelector('.crop-card-meta').textContent = 'Đang cập nhật mỏ…'; element.remove(); scheduleTreeRefresh(); log(`${card.querySelector('.crop-card-title').textContent} đã sẵn sàng khai thác, đang cập nhật…`); }
       else if (card.dataset.resource === 'fruit') { card.querySelector('.crop-card-meta').textContent = 'Đang cập nhật Fruit…'; element.remove(); scheduleTreeRefresh(); log(`${card.querySelector('.crop-card-title').textContent} đã sẵn sàng thu hoạch, đang cập nhật…`); }
       else if (card.dataset.resource === 'pet') { element.remove(); void checkAwakePets(); }

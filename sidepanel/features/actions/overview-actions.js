@@ -188,13 +188,109 @@ mapActivityContent.addEventListener('click', async (event) => {
   if (!action) return;
   if (action === 'fertilise' && button.closest('#crop-growing-results')) return;
   if (action === 'chop' || action === 'mine') return;
+  if (action === 'open-resource-tool') {
+    let category = button.dataset.toolCategory || '';
+    let slotIndex = Number(button.dataset.toolSlotIndex);
+    const expectedIcon = button.dataset.toolIcon || '';
+    const expectedName = String(button.dataset.toolName || '').replace(/[^a-z]/gi, '').toLowerCase();
+    button.disabled = true;
+    button.textContent = '…';
+    try {
+      // Reuse the exact Workbench-tab/card interaction used by the user.
+      // That listener is responsible for opening the game window and selecting
+      // its matching item, so this stays aligned with normal panel behavior.
+      const workbenchTab = mapActivityTabs.find((tab) => tab.dataset.mapActivityTab === 'workbench');
+      if (!workbenchTab) throw new Error('Không tìm thấy tab Workbench.');
+      workbenchTab.click();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const deadline = Date.now() + 12000;
+      let toolCard = null;
+      while (!toolCard && Date.now() < deadline) {
+        if (!category || !Number.isInteger(slotIndex)) {
+          const item = lastToolsScan?.items.find((entry) => entry.icon === expectedIcon)
+            || lastToolsScan?.items.find((entry) => String(entry.name || '').replace(/[^a-z]/gi, '').toLowerCase() === expectedName);
+          if (item) { category = item.category || ''; slotIndex = Number(item.slotIndex); }
+        }
+        toolCard = Array.from(workbenchResults.querySelectorAll('.shop-card[data-tool-slot-index]')).find((card) => card.dataset.toolCategory === category && Number(card.dataset.toolSlotIndex) === slotIndex) || null;
+        if (!toolCard) await new Promise((resolve) => setTimeout(resolve, 60));
+      }
+      if (!toolCard) throw new Error('Không tìm thấy card Tool tương ứng trong Workbench.');
+      toolCard.classList.add('is-resource-tool-target');
+      toolCard.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const clearToolTarget = () => toolCard?.classList.remove('is-resource-tool-target');
+      toolCard.addEventListener('pointerdown', clearToolTarget, { once: true });
+      toolCard.addEventListener('keydown', clearToolTarget, { once: true });
+      toolCard.click();
+    } catch (error) {
+      logActionError(error.message || 'Không mở được Tool trong Workbench.');
+    } finally {
+      if (button.isConnected) {
+        button.disabled = false;
+        button.textContent = 'Buy';
+      }
+    }
+    return;
+  }
+  if (action === 'scan-fertilisers') {
+    button.disabled = true;
+    button.classList.add('is-loading');
+    try {
+      scanFertilisersButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const deadline = Date.now() + 20000;
+      while (scanFertilisersButton.disabled && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+    } finally {
+      if (button.isConnected) {
+        button.disabled = false;
+        button.classList.remove('is-loading');
+      }
+    }
+    return;
+  }
+  if (action === 'scan-tools-header') {
+    button.disabled = true;
+    button.classList.add('is-loading');
+    try {
+      scanToolsButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const deadline = Date.now() + 25000;
+      while (scanToolsButton.disabled && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+    } finally {
+      if (button.isConnected) {
+        button.disabled = false;
+        button.classList.remove('is-loading');
+      }
+    }
+    return;
+  }
+  if (action === 'scan-map-header') {
+    button.disabled = true;
+    button.classList.add('is-loading');
+    const finishLog = startActionLog('Đang quét Map…');
+    try {
+      if (!await scanMap()) logActionError('Không thể quét Map.');
+    } catch (error) {
+      logActionError(error.message || 'Không thể quét Map.');
+    } finally {
+      finishLog();
+      if (button.isConnected) {
+        button.disabled = false;
+        button.classList.remove('is-loading');
+      }
+    }
+    return;
+  }
   if (action === 'scan-profession') {
     const scope = button.dataset.scanScope;
     const labels = { crop: 'Crop', fruit: 'Fruit', tree: 'Tree', mining: 'Mining', salt: 'Salt', mushroom: 'Nấm', pet: 'Pet' };
     const label = labels[scope] || 'nghề này';
-    const originalLabel = button.textContent;
+    const originalMarkup = button.innerHTML;
     button.disabled = true;
-    button.textContent = 'Đang quét…';
+    button.classList.add('is-loading');
     const finishLog = startActionLog(`Đang quét ${label}…`);
     try {
       if (!await scanMap(scope)) logActionError(`Không thể quét ${label}.`);
@@ -204,7 +300,8 @@ mapActivityContent.addEventListener('click', async (event) => {
       finishLog();
       if (button.isConnected) {
         button.disabled = false;
-        button.textContent = originalLabel;
+        button.classList.remove('is-loading');
+        button.innerHTML = originalMarkup;
       }
     }
     return;
@@ -251,8 +348,7 @@ mapActivityContent.addEventListener('click', async (event) => {
   }
   if (action === 'harvest-salt') {
     if (!toolBagScanned) {
-      scanToolsButton.click();
-      log('Đang quét Tools để kiểm tra Salt Rake…');
+      logActionError('Hãy mở Workbench hoặc bấm Load Tools để kiểm tra Salt Rake.');
       return;
     }
     button.disabled = true;
@@ -308,8 +404,9 @@ mapActivityContent.addEventListener('click', async (event) => {
     return;
   }
   if (action === 'scan-composter') {
+    const originalMarkup = button.innerHTML;
     button.disabled = true;
-    button.textContent = 'Đang quét…';
+    button.classList.add('is-loading');
     const finishLog = startActionLog('Đang quét Composter…');
     try {
       applyComposterStates(await readComposterStates());
@@ -329,7 +426,8 @@ mapActivityContent.addEventListener('click', async (event) => {
       finishLog();
       if (button.isConnected) {
         button.disabled = false;
-        button.textContent = 'Quét compost';
+        button.classList.remove('is-loading');
+        button.innerHTML = originalMarkup;
       }
     }
     return;
@@ -418,6 +516,13 @@ mapActivityContent.addEventListener('click', async (event) => {
         func: async (requestedFertiliserType, requestedSeedName, requestedMapKeys) => {
           const soilSelector = 'img[src*="/game-assets/crops/soil2.png"]';
           const titleCase = (value) => value.replace(/[_-]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+          // Quick-slot labels abbreviate large stacks as 1k, 1.5k, … .
+          // Reading only the first digits caused Auto Crop to plant one tile.
+          const readItemCount = (value) => {
+            const match = String(value || '').replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*(k)?\b/i);
+            const amount = Number.parseFloat(match?.[1] || '0');
+            return Number.isFinite(amount) ? Math.floor(amount * (match?.[2] ? 1000 : 1)) : 0;
+          };
           const quickSlots = () => {
             const quickSelectColumn = Array.from(document.querySelectorAll('div.flex.flex-col.items-center')).find((column) => Array.from(column.children).filter((child) => child.classList.contains('relative') && child.querySelector('.bg-brown-600 img[alt="item"]')).length >= 3);
             return quickSelectColumn ? Array.from(quickSelectColumn.children).filter((child) => child.classList.contains('relative') && child.querySelector('.bg-brown-600 img[alt="item"]')) : [];
@@ -427,6 +532,10 @@ mapActivityContent.addEventListener('click', async (event) => {
             const match = source.match(/\/game-assets\/crops\/([^/]+)\/seed\.png/i);
             return Boolean(match && (!requestedCrop || match[1].replace(/[_-]/g, ' ').toLowerCase() === requestedCrop));
           };
+          const quickSlotForRequestedSeed = () => quickSlots().find((slot) => {
+            const source = slot.querySelector('.bg-brown-600 img[alt="item"]')?.currentSrc || slot.querySelector('.bg-brown-600 img[alt="item"]')?.src || '';
+            return isRequestedSeed(source);
+          });
           let seedSlot = quickSlots().find((slot) => {
             const source = slot.querySelector('.bg-brown-600 img[alt="item"]')?.currentSrc || slot.querySelector('.bg-brown-600 img[alt="item"]')?.src || '';
             return isRequestedSeed(source);
@@ -445,20 +554,24 @@ mapActivityContent.addEventListener('click', async (event) => {
               return isRequestedSeed(source);
             });
             if (bagSeedSlot) {
-              bagSeedSlot.click();
-              await new Promise((resolve) => setTimeout(resolve, 180));
+              // Selecting a bag item can take several frames before it
+              // reaches the quick bar. Wait for the exact requested seed;
+              // otherwise Auto would move on after the first stack ended.
+              (bagSeedSlot.closest('.cursor-pointer') || bagSeedSlot).click();
+              const deadline = Date.now() + 1600;
+              while (!quickSlotForRequestedSeed() && Date.now() < deadline) {
+                await new Promise((resolve) => setTimeout(resolve, 50));
+              }
             }
             bagRoot?.querySelector('img[src*="/game-assets/icons/close.png"]')?.click();
-            seedSlot = quickSlots().find((slot) => {
-              const source = slot.querySelector('.bg-brown-600 img[alt="item"]')?.currentSrc || slot.querySelector('.bg-brown-600 img[alt="item"]')?.src || '';
-              return isRequestedSeed(source);
-            });
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            seedSlot = quickSlotForRequestedSeed();
           }
           if (!seedSlot) return { clicked: 0, emptyCounts: [], growing: [], error: `Không tìm thấy ${requestedSeedName} trên thanh chọn nhanh hoặc trong túi đồ.` };
           seedSlot.querySelector('.bg-brown-600')?.click();
           await new Promise((resolve) => setTimeout(resolve, 35));
           const heldItem = seedSlot.querySelector('.bg-brown-600 img[alt="item"]');
-          const seedCount = Number((seedSlot.textContent.match(/\d[\d,.]*/)?.[0] || '0').replace(/[^\d]/g, ''));
+          const seedCount = readItemCount(seedSlot.textContent);
           if (!seedCount) return { clicked: 0, emptyCounts: [], growing: [], error: 'Không còn hạt giống để trồng.' };
           const seedSource = heldItem.currentSrc || heldItem.src;
           const seedMatch = seedSource.match(/\/crops\/([^/]+)\/seed\.png/i);

@@ -1,6 +1,7 @@
 /* Panel navigation, settings view, and the temporary seed-picker flow. */
 
 let previousToolTab = 'map';
+let previousMapActivity = 'overview';
 const settingsButton = document.querySelector('#open-settings');
 const closeSettingsButton = document.querySelector('#close-settings');
 
@@ -15,8 +16,9 @@ function activateToolTab(tabName) {
   toolTabPanels.forEach((panel) => { panel.hidden = panel.dataset.toolPanel !== tabName; });
 }
 
-function activateMapActivityTab(activity) {
+function activateMapActivityTab(activity, options = {}) {
   const previousActivity = mapActivityTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.mapActivityTab || '';
+  if (previousActivity && previousActivity !== activity) previousMapActivity = previousActivity;
   updateMapActivityTabIndicators();
   mapActivityTabs.forEach((tab) => {
     const active = tab.dataset.mapActivityTab === activity;
@@ -28,7 +30,9 @@ function activateMapActivityTab(activity) {
   mapActivityContent.querySelectorAll('.empty-state').forEach((state) => { state.hidden = activity !== 'crop' && state.dataset.activity !== activity; });
   updateBettyActivityFilter(activity);
   updateWorkbenchActivityFilter(activity);
-  if (typeof syncGameBuildingActivity === 'function') void syncGameBuildingActivity(activity, previousActivity);
+  if (activity === 'auto' && typeof renderAutoCropPanel === 'function') renderAutoCropPanel();
+  if (options.syncGame !== false && typeof syncGameBuildingActivity === 'function') void syncGameBuildingActivity(activity, previousActivity);
+  if (previousActivity === 'cheer' && activity !== 'cheer' && typeof closeCheerPanel === 'function') void closeCheerPanel();
 }
 
 function setSeedPicking(active) {
@@ -68,3 +72,23 @@ settingsButton?.addEventListener('click', () => activateToolTab('settings'));
 closeSettingsButton?.addEventListener('click', () => activateToolTab(previousToolTab || 'map'));
 toolTabs.forEach((tab) => tab.addEventListener('click', () => activateToolTab(tab.dataset.toolTab)));
 mapActivityTabs.forEach((tab) => tab.addEventListener('click', () => activateMapActivityTab(tab.dataset.mapActivityTab)));
+
+// Side mouse button 4 (DOM button = 3) is a fast way back from Workbench to
+// the previous activity, without invoking the browser's own Back navigation.
+const handleMouseBack = (event) => {
+  if (event.button !== 3) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const activeToolPanel = toolTabPanels.find((panel) => !panel.hidden)?.dataset.toolPanel;
+  if (activeToolPanel && activeToolPanel !== 'map') {
+    activateToolTab(previousToolTab || 'map');
+    return;
+  }
+  const activeActivity = mapActivityTabs.find((tab) => tab.classList.contains('is-active'))?.dataset.mapActivityTab || '';
+  const target = previousMapActivity;
+  const targetTab = mapActivityTabs.find((tab) => tab.dataset.mapActivityTab === target && !tab.hidden);
+  if (targetTab && target !== activeActivity) activateMapActivityTab(target);
+};
+document.addEventListener('mousedown', handleMouseBack, true);
+document.addEventListener('mouseup', (event) => { if (event.button === 3) event.preventDefault(); }, true);
+document.addEventListener('auxclick', (event) => { if (event.button === 3) event.preventDefault(); }, true);

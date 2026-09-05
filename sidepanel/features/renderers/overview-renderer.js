@@ -91,8 +91,49 @@ function renderOverview() {
   const mushroomCards = (data.mushrooms?.wild?.count || data.mushrooms?.magic?.count) ? [mushroomCard(data.mushrooms)] : [];
   const sleepingPetCards = (data.pets?.sleeping || []).map((item) => petCard(item, 'sleeping'));
   const awakePetCards = (data.pets?.awake || []).map((item) => petCard(item, 'awake'));
-  const section = (title, cards, growingCards = [], scanScope = '') => `<section class="overview-section"><h2>${title}${scanScope ? ` <button class="profession-scan" type="button" data-ui-action="scan-profession" data-scan-scope="${scanScope}">Quét</button>` : ''}</h2><div class="crop-grid">${cards.join('')}</div>${growingCards.length ? `<div class="crop-grid overview-growing-grid">${growingCards.join('')}</div>` : ''}</section>`;
-  overviewResults.innerHTML = `<div class="activity-group" data-activity="overview">${mushroomCards.length ? section('Foraging', mushroomCards, [], 'mushroom') : ''}${sleepingPetCards.length || awakePetCards.length ? section('Pet', sleepingPetCards, awakePetCards, 'pet') : ''}${section('Crop', cropCards, cropGrowingCards, 'crop')}${hasFruit ? section('Fruit', fruitCards, fruitGrowingCards, 'fruit') : ''}${hasComposters ? section('Composter <button class="composter-scan-all" type="button" data-ui-action="scan-composter">Quét compost</button>', composterCards, composterGrowingCards) : ''}${section('Tree', treeCards, treeGrowingCards, 'tree')}${section('Mining', miningCards, miningGrowingCards, 'mining')}${saltCards.length ? section('Salt', saltCards, [], 'salt') : ''}</div>`;
+  const mapCards = (() => {
+    const detail = landInfo?.querySelector('.land-details');
+    const balances = Array.from(landInfo?.querySelectorAll('.land-balance') || []);
+    const landName = Array.from(detail?.querySelector('strong')?.childNodes || [])
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent.trim())
+      .join(' ') || '';
+    const landIcon = detail?.querySelector('.land-thumbnail')?.currentSrc || detail?.querySelector('.land-thumbnail')?.src || '';
+    const season = detail?.querySelector('span')?.textContent.trim() || '';
+    const cards = [];
+    if (landName) {
+      cards.push(`<article class="crop-card map-overview-card map-land-card" data-resource="map-land"><div class="crop-icon-box">${landIcon ? `<img class="crop-image" src="${escapeHtml(landIcon)}" alt="" />` : '<span class="map-card-fallback">⌂</span>'}</div><div class="crop-card-content"><span class="crop-card-state">Land</span><strong class="crop-card-title">${escapeHtml(landName)}</strong>${season ? `<span class="crop-card-meta">${escapeHtml(season)}</span>` : ''}</div></article>`);
+    }
+    balances.forEach((balance, index) => {
+      const rawLabel = balance.querySelector('img')?.alt || 'Số dư';
+      const label = ({ coins: 'COINS', gems: 'GEMS', flw: 'FLOWER', flower: 'FLOWER' })[rawLabel.trim().toLowerCase()] || rawLabel.toUpperCase();
+      const icon = balance.querySelector('img')?.currentSrc || balance.querySelector('img')?.src || '';
+      const value = balance.querySelector('b')?.textContent.trim() || balance.textContent.trim();
+      if (!value) return;
+      cards.push(`<article class="crop-card map-overview-card map-${escapeHtml(label.toLowerCase())}-card" data-resource="map-balance-${index}"><div class="crop-icon-box">${icon ? `<img class="crop-image" src="${escapeHtml(icon)}" alt="" />` : '<span class="map-card-fallback">●</span>'}</div><div class="crop-card-content"><span class="crop-card-state">${escapeHtml(label)}</span><strong class="crop-card-title">${escapeHtml(value)}</strong></div></article>`);
+    });
+    return cards;
+  })();
+  const reloadIcon = 'https://assets-v2.lottiefiles.com/a/2e38d784-116e-11ee-95a0-ff83a71694af/KTpQk2gMhQ.gif';
+  const reloadStaticIcon = 'https://cdn-icons-png.flaticon.com/512/159/159061.png';
+  const reloadButton = (name, scanScope) => {
+    const buttonLabel = `Reload ${name}`;
+    const icon = `<span class="profession-reload-icon" aria-hidden="true"><img class="profession-reload-icon-static" src="${reloadStaticIcon}" alt="" /><img class="profession-reload-icon-loading" src="${reloadIcon}" alt="" /></span><span>${name}</span>`;
+    return scanScope === 'fertilisers'
+      ? `<button class="profession-scan" type="button" data-ui-action="scan-fertilisers" title="Quét túi đồ để đọc Fertilisers" aria-label="Quét Fertilisers">${icon}</button>`
+      : scanScope === 'map'
+      ? `<button class="profession-scan" type="button" data-ui-action="scan-map-header" title="Reload Map" aria-label="Reload Map">${icon}</button>`
+      : scanScope === 'tools'
+      ? `<button class="profession-scan" type="button" data-ui-action="scan-tools-header" title="Quét Tools" aria-label="Quét Tools">${icon}</button>`
+      : scanScope === 'composter'
+      ? `<button class="profession-scan" type="button" data-ui-action="scan-composter" title="${buttonLabel}" aria-label="${buttonLabel}">${icon}</button>`
+      : `<button class="profession-scan" type="button" data-ui-action="scan-profession" data-scan-scope="${scanScope}" title="${buttonLabel}" aria-label="${buttonLabel}">${icon}</button>`;
+  };
+  const section = (name, cards, growingCards = [], scanScope = '', headerScopes = [scanScope]) => {
+    const header = headerScopes.map((scope) => reloadButton(scope === 'fertilisers' ? 'Fertilisers' : scope === 'tools' ? 'Tools' : name, scope)).join('');
+    return `<section class="overview-section"><h2 class="overview-section-controls">${header}</h2><div class="crop-grid">${cards.join('')}</div>${growingCards.length ? `<div class="crop-grid overview-growing-grid">${growingCards.join('')}</div>` : ''}</section>`;
+  };
+  overviewResults.innerHTML = `<div class="activity-group" data-activity="overview">${section('Map', mapCards, [], 'map')}${mushroomCards.length ? section('Foraging', mushroomCards, [], 'mushroom') : ''}${sleepingPetCards.length || awakePetCards.length ? section('Pet', sleepingPetCards, awakePetCards, 'pet') : ''}${section('Crop', cropCards, cropGrowingCards, 'crop', ['crop', 'fertilisers'])}${hasFruit ? section('Fruit', fruitCards, fruitGrowingCards, 'fruit', ['fruit', 'fertilisers']) : ''}${hasComposters ? section('Composter', composterCards, composterGrowingCards, 'composter') : ''}${section('Tree', treeCards, treeGrowingCards, 'tree', ['tree', 'tools'])}${section('Mining', miningCards, miningGrowingCards, 'mining', ['mining', 'tools'])}${saltCards.length ? section('Salt', saltCards, [], 'salt', ['salt', 'tools']) : ''}</div>`;
   const currentCards = new Set();
   overviewResults.querySelectorAll('.crop-card').forEach((card) => {
     const key = cardKey(card);

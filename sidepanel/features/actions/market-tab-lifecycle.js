@@ -13,7 +13,8 @@ const buildingConfig = {
     name: 'Workbench',
     pattern: /\/game-assets\/(?:[^/]+\/)*buildings\/(?:[^/]+\/)*workbench\.(?:webp|png)(?:[?#]|$)/i,
     scanButton: scanToolsButton,
-    hasScan: () => Boolean(lastToolsScan)
+    hasScan: () => Boolean(lastToolsScan),
+    loadSummaries: true
   }
 };
 
@@ -66,12 +67,16 @@ async function syncGameBuildingActivity(activity, previousActivity = '') {
   activeGameBuilding = entering;
   if (!entering) return;
   const config = buildingConfig[entering];
-  if (!config.hasScan()) {
+  if (!config.hasScan() && !config.loadSummaries) {
     config.scanButton.click();
     await new Promise((resolve) => setTimeout(resolve, 30));
     await waitForScan(config.scanButton);
   }
-  if (activeGameBuilding === entering) await openGameBuilding(entering);
+  if (activeGameBuilding !== entering) return;
+  await openGameBuilding(entering);
+  if (config.loadSummaries && !config.hasScan()) {
+    try { await loadWorkbenchToolSummaries(); } catch (error) { logActionError(error.message || 'Không đọc được danh sách Tools.'); }
+  }
 }
 
 async function highlightGameBuilding(activity) {

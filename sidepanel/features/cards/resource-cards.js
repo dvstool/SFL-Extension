@@ -6,12 +6,12 @@ function miningCard(item, type) {
   const tool = pickaxeTools[item.resource] || {};
   const toolCount = scannedToolIcon ? (toolCounts.get(scannedToolIcon) ?? 0) : toolBagScanned ? 0 : '—';
   const toolBadgeState = toolBagScanned && !Number(toolCount) ? ' is-empty' : toolBagScanned ? '' : ' is-unscanned';
-  const toolBadge = `<span class="resource-tool-count${toolBadgeState}" title="${escapeHtml(tool.name || 'Pickaxe')} ×${escapeHtml(toolCount)}"><img src="${escapeHtml(scannedToolIcon || tool.fallback || '')}" alt="" /><b>×${escapeHtml(toolCount)}</b></span>`;
+  const toolBadge = resourceToolBadge(scannedToolIcon, tool.fallback, tool.name || 'Pickaxe', toolCount, toolBadgeState);
   const detail = growing ? (Number.isFinite(item.seconds) ? countdownMarkup(item) : 'Đang cập nhật thời gian…') : '';
   const rockCount = Number(item.count || 0);
-  const maxMines = Number.isFinite(Number(toolCount)) ? Math.min(rockCount, Math.max(0, Number(toolCount))) : rockCount;
+  const maxMines = toolBagScanned && Number.isFinite(Number(toolCount)) ? Math.min(rockCount, Math.max(0, Number(toolCount))) : 0;
   const mineLabel = `Khai thác x${maxMines}`;
-  const action = growing ? '' : !toolBagScanned ? '<div class="crop-card-actions"><button type="button" data-ui-action="scan-tools">Quét Tools</button></div>' : `<div class="crop-card-actions"><button type="button" data-ui-action="mine" data-action-label="${mineLabel}"${maxMines ? '' : ' disabled'}>${mineLabel}</button></div>`;
+  const action = growing ? '' : `<div class="crop-card-actions"><button type="button" data-ui-action="mine" data-action-label="${mineLabel}"${maxMines ? '' : ' disabled'}>${maxMines ? mineLabel : 'Cần Pickaxe'}</button></div>`;
   return `<article class="crop-card tree-card mining-card is-${growing ? 'growing' : 'ready'} ${growing ? '' : 'is-ready'}" data-resource="mining" data-mining-resource="${item.resource}" data-map-keys="${escapeHtml((item.mapKeys || []).join('||'))}" data-count="${item.count}"><div class="crop-icon-box"><img class="crop-image" src="${escapeHtml(item.icon)}" alt="${escapeHtml(item.label)}" /><b class="crop-quantity">×${item.count}</b></div><div class="crop-card-content"><span class="crop-card-state">${growing ? 'Đang hồi' : 'Sẵn sàng'}</span><strong class="crop-card-title">${escapeHtml(item.label)}</strong>${detail ? `<span class="crop-card-meta">${detail}</span>` : ''}</div>${toolBadge}${action}</article>`;
 }
 
@@ -24,7 +24,7 @@ function saltCard(item, growing = false) {
   const rakeIcon = rakeSource || saltRakeFallback;
   const rakeCount = rakeSource ? (toolCounts.get(rakeSource) ?? 0) : toolBagScanned ? 0 : '—';
   const rakeBadgeState = toolBagScanned && !Number(rakeCount) ? ' is-empty' : toolBagScanned ? '' : ' is-unscanned';
-  const rakeBadge = `<span class="resource-tool-count${rakeBadgeState}" title="Salt Rake ×${escapeHtml(rakeCount)}"><img src="${escapeHtml(rakeIcon)}" alt="" /><b>×${escapeHtml(rakeCount)}</b></span>`;
+  const rakeBadge = resourceToolBadge(rakeSource, saltRakeFallback, 'Salt Rake', rakeCount, rakeBadgeState);
   if (growing) {
     const hasCountdown = Number.isFinite(item.seconds) && item.seconds > 0;
     const detail = hasCountdown ? countdownMarkup(item) : 'Đang cập nhật thời gian…';
@@ -34,7 +34,7 @@ function saltCard(item, growing = false) {
   const lacksRake = toolBagScanned && (!rakeSource || !Number(toolCounts.get(rakeSource)));
   const actions = [1, 2, 3].map((hits) => {
     const unavailable = hits > item.hits || lacksRake;
-    return `<span class="salt-rake-action"><button class="salt-rake-button${unavailable || needsToolScan ? ' is-insufficient' : ''}" type="button" data-ui-action="harvest-salt" data-requested-salt-hits="${hits}"${unavailable && !needsToolScan ? ' disabled' : ''}><img src="${escapeHtml(rakeIcon)}" alt="Salt Rake" /><span>×${hits}</span></button>${needsToolScan ? '<span class="salt-rake-tooltip">Quét Tools</span>' : ''}</span>`;
+    return `<span class="salt-rake-action"><button class="salt-rake-button${unavailable || needsToolScan ? ' is-insufficient' : ''}" type="button" data-ui-action="harvest-salt" data-requested-salt-hits="${hits}"${unavailable || needsToolScan ? ' disabled' : ''}><img src="${escapeHtml(rakeIcon)}" alt="Salt Rake" /><span>×${hits}</span></button></span>`;
   }).join('');
   return `<article class="crop-card tree-card salt-card is-ready" data-resource="salt" data-salt-hits="${item.hits}" data-map-keys="${escapeHtml((item.mapKeys || []).join('||'))}" data-count="${item.count}"><div class="crop-icon-box"><img class="crop-image" src="${escapeHtml(item.icon)}" alt="Salt" /><b class="crop-quantity">×${item.count}</b></div><div class="crop-card-content"><span class="crop-card-state">Sẵn sàng</span><strong class="crop-card-title">Salt</strong></div>${rakeBadge}<div class="crop-card-actions">${actions}</div></article>`;
 }
@@ -87,8 +87,9 @@ function composterCard(item, type) {
   const empty = type === 'empty';
   const ready = type === 'ready';
   const hasCountdown = growing && Number.isFinite(item.seconds) && item.seconds > 0;
+  const needsComposterLoad = growing && !hasCountdown;
   const state = ready ? 'Sẵn sàng' : empty ? 'Trống' : 'Đang hồi';
-  const detail = growing ? (hasCountdown ? countdownMarkup(item) : 'Đang cập nhật thời gian…') : ready ? 'Sẵn sàng thu hoạch' : 'Sẵn sàng ủ phân';
+  const detail = growing ? (hasCountdown ? countdownMarkup(item) : 'Load Composter') : ready ? 'Sẵn sàng thu hoạch' : 'Sẵn sàng ủ phân';
   const action = ready ? 'Collect' : empty ? 'Compost' : '';
   const recipe = (item.requirements || item.recipe || []).map((entry) => {
     const amounts = String(entry.text || '').match(/([\d.,]+)\s*\/\s*([\d.,]+)/);
@@ -98,5 +99,5 @@ function composterCard(item, type) {
     return `<span class="compost-tooltip-item${missing ? ' is-missing' : ''}">${entry.icon ? `<img src="${escapeHtml(entry.icon)}" alt="" />` : ''}<b>${escapeHtml(entry.text)}</b></span>`;
   }).join('');
   const insufficient = empty && item.canCompost === false;
-  return `<article class="crop-card composter-card is-${type} ${ready ? 'is-ready' : ''}" data-resource="composter" data-map-keys="${escapeHtml((item.mapKeys || []).join('||'))}" data-count="${item.count}"><div class="crop-icon-box"><img class="crop-image" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${item.count}</b></div><div class="crop-card-content"><span class="crop-card-state">${state}</span><strong class="crop-card-title">${escapeHtml(item.label)}</strong><span class="crop-card-meta">${detail}</span></div>${action ? `<div class="crop-card-actions"><span class="compost-action"><button type="button" data-ui-action="${ready ? 'collect-composter' : 'compost'}"${insufficient ? ' class="is-insufficient" disabled' : ''}>${action}</button>${recipe ? `<span class="compost-tooltip">${recipe}</span>` : ''}</span></div>` : ''}</article>`;
+  return `<article class="crop-card composter-card is-${type} ${ready ? 'is-ready' : ''}${needsComposterLoad ? ' needs-composter-load' : ''}" data-resource="composter" data-map-keys="${escapeHtml((item.mapKeys || []).join('||'))}" data-count="${item.count}"><div class="crop-icon-box"><img class="crop-image" src="${escapeHtml(item.icon)}" alt="" /><b class="crop-quantity">×${item.count}</b></div><div class="crop-card-content"><span class="crop-card-state">${state}</span><strong class="crop-card-title">${escapeHtml(item.label)}</strong><span class="crop-card-meta">${detail}</span></div>${action ? `<div class="crop-card-actions"><span class="compost-action"><button type="button" data-ui-action="${ready ? 'collect-composter' : 'compost'}"${insufficient ? ' class="is-insufficient" disabled' : ''}>${action}</button>${recipe ? `<span class="compost-tooltip">${recipe}</span>` : ''}</span></div>` : ''}${needsComposterLoad ? '<button class="composter-load-overlay" type="button" data-ui-action="scan-composter">Load Composter</button>' : ''}</article>`;
 }
